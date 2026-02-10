@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 280" width="100%">
+<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>
+<rect x="10" y="10" width="500" height="260" style="fill:#fafafa;stroke:#333;stroke-width:2"/>
+<text x="260.0" y="32" style="font:bold 16px system-ui;fill:#111;text-anchor:middle">Crosspoint Emulator</text>
+<rect x="40" y="50" width="160" height="88" style="fill:#fff;stroke:#333;stroke-width:1.5"/>
+<text x="120.0" y="74.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">Crosspoint App</text>
+<text x="120.0" y="90.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">(main.cpp)</text>
+<text x="120.0" y="106.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">• Activities • Themes</text>
+<text x="120.0" y="122.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">• Readers • UI Logic</text>
+<rect x="320" y="50" width="160" height="88" style="fill:#fff;stroke:#333;stroke-width:1.5"/>
+<text x="400.0" y="74.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">Sim HAL Layer</text>
+<text x="400.0" y="90.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">(sim/include/)</text>
+<text x="400.0" y="106.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">• HalDisplay • HalGPIO</text>
+<text x="400.0" y="122.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">• SDCardManager • Stubs</text>
+<line x1="200" y1="85" x2="320" y2="85" style="stroke:#333;stroke-width:1.5;fill:none" marker-end="url(#arrowhead)" />
+<line x1="120" y1="138" x2="120" y2="175" style="stroke:#333;stroke-width:1.5;fill:none" marker-end="url(#arrowhead)" />
+<line x1="400" y1="138" x2="400" y2="175" style="stroke:#333;stroke-width:1.5;fill:none" marker-end="url(#arrowhead)" />
+<rect x="40" y="175" width="160" height="80" style="fill:#fff;stroke:#333;stroke-width:1.5"/>
+<text x="120.0" y="195.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">Crosspoint Libs</text>
+<text x="120.0" y="211.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">• GfxRenderer</text>
+<text x="120.0" y="227.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">• Epub/Txt/Xtc</text>
+<text x="120.0" y="243.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">• Fonts • Utf8</text>
+<rect x="320" y="175" width="160" height="80" style="fill:#fff;stroke:#333;stroke-width:1.5"/>
+<text x="400.0" y="195.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">Host Platform</text>
+<text x="400.0" y="211.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">• SDL2 Window</text>
+<text x="400.0" y="227.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">• File System</text>
+<text x="400.0" y="243.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">• Keyboard</text>
+</svg>

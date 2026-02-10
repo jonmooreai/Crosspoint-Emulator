@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" width="100%">
+<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>
+<text x="240.0" y="28" style="font:bold 16px system-ui;fill:#111;text-anchor:middle">Project Structure</text>
+<text x="40" y="50" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:start">crosspoint-emulator/</text>
+<text x="40" y="72" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:start">├── CMakeLists.txt    # Build configuration</text>
+<text x="40" y="94" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:start">├── README.md</text>
+<text x="40" y="116" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:start">├── build/           # Build output (gitignored)</text>
+<text x="40" y="138" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:start">├── docs/</text>
+<text x="40" y="160" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:start">│   └── UI-UX-LIBRARY-PLAN.md</text>
+<text x="40" y="182" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:start">├── sdcard/          # Virtual SD card (gitignored)</text>
+<text x="40" y="204" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:start">└── sim/             # Simulator HAL</text>
+<text x="40" y="226" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:start">    ├── include/     # HAL headers (HalDisplay, HalGPIO, …)</text>
+<text x="40" y="248" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:start">    └── src/         # main_sim.cpp, sim_display.cpp, sim_gpio.cpp, sim_storage.cpp</text>
+</svg>

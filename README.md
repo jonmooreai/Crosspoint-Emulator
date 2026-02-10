@@ -354,200 +354,33 @@ mv sdcard/*.epub sdcard/Novels/
 
 ## Architecture
 
+*Diagrams are generated SVGs. To regenerate after editing: `python3 docs/diagrams/generate_diagrams.py`*
+
 ### High-Level Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Crosspoint Emulator                     │
-├─────────────────────────────────────────────────────────────┤
-│                                                           │
-│  ┌──────────────────┐         ┌──────────────────┐     │
-│  │  Crosspoint App  │────────▶│   Sim HAL Layer  │     │
-│  │   (main.cpp)     │         │  (sim/include/)  │     │
-│  │                  │         │                  │     │
-│  │  • Activities   │         │  • HalDisplay    │     │
-│  │  • Themes      │         │  • HalGPIO       │     │
-│  │  • Readers     │         │  • SDCardManager │     │
-│  │  • UI Logic    │         │  • Arduino Stubs │     │
-│  └──────────────────┘         └──────────────────┘     │
-│         │                              │                    │
-│         │                              │                    │
-│         ▼                              ▼                    │
-│  ┌──────────────────┐         ┌──────────────────┐     │
-│  │  Crosspoint Libs  │         │   Host Platform  │     │
-│  │                  │         │                  │     │
-│  │  • GfxRenderer  │         │  • SDL2 Window  │     │
-│  │  • Epub/Txt/Xtc │         │  • File System   │     │
-│  │  • Fonts        │         │  • Keyboard      │     │
-│  │  • Utf8        │         │                  │     │
-│  └──────────────────┘         └──────────────────┘     │
-│                                                           │
-└─────────────────────────────────────────────────────────────┘
-```
+![High-level architecture: Crosspoint App and Sim HAL above Crosspoint Libs and Host Platform](docs/diagrams/arch-high-level.svg)
 
 ### Component Flow
 
-```
-┌─────────────┐
-│   main()    │  ← Entry point (main_sim.cpp)
-└──────┬──────┘
-       │
-       ├─▶ sim_display_init()  → SDL2 window creation
-       │
-       ├─▶ setup()              → Crosspoint initialization
-       │
-       └─▶ loop()               → Main event loop
-            │
-            ├─▶ sim_display_pump_events()  → Keyboard input
-            │
-            ├─▶ HalGPIO::update()         → Button state
-            │
-            ├─▶ Activity::loop()          → UI logic
-            │
-            └─▶ HalDisplay::displayBuffer() → Render to SDL2
-```
+![Component flow: main() → sim_display_init, setup, loop → display and input](docs/diagrams/arch-component-flow.svg)
 
 ### HAL Abstraction Layer
 
 The Hardware Abstraction Layer (HAL) provides a consistent interface between Crosspoint application code and platform-specific implementations:
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│              Crosspoint Application Code                   │
-│  (Activities, Themes, Readers, UI Logic)               │
-└────────────────────┬───────────────────────────────────┘
-                     │
-                     │ Uses HAL interfaces
-                     │
-┌────────────────────▼───────────────────────────────────┐
-│                    HAL Layer                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────┐ │
-│  │ HalDisplay   │  │  HalGPIO     │  │SDCardMgr  │ │
-│  │             │  │             │  │           │ │
-│  │ • display() │  │ • isPressed │  │ • open()  │ │
-│  │ • clear()   │  │ • wasPress()│  │ • read()   │ │
-│  └──────────────┘  └──────────────┘  └──────────┘ │
-└────────────────────┬───────────────────────────────────┘
-                     │
-         ┌───────────┴───────────┐
-         │                       │
-         ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐
-│  Device HAL      │    │   Sim HAL        │
-│  (ESP32)        │    │  (SDL2/Desktop) │
-│                 │    │                 │
-│ • E-ink driver │    │ • SDL2 renderer │
-│ • GPIO pins     │    │ • Keyboard map   │
-│ • SD card SPI   │    │ • File system   │
-└─────────────────┘    └─────────────────┘
-```
+![HAL layer: Application → HAL (HalDisplay, HalGPIO, SDCardMgr) → Device HAL or Sim HAL](docs/diagrams/arch-hal.svg)
 
 ### Display Pipeline
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│         Crosspoint Rendering Pipeline                     │
-├─────────────────────────────────────────────────────────────┤
-│                                                         │
-│  1. Application draws to framebuffer                   │
-│     ┌─────────────────────────────────────┐            │
-│     │  uint8_t frameBuffer[BUFFER_SIZE]  │            │
-│     │  (800×480 bits = 48,000 bytes)    │            │
-│     └─────────────────────────────────────┘            │
-│                    │                                   │
-│                    ▼                                   │
-│  2. HalDisplay::displayBuffer()                       │
-│     • Copies to internal buffer                       │
-│     • Triggers render                                │
-│                    │                                   │
-│                    ▼                                   │
-│  3. sim_display.cpp: render_bw_to_texture()          │
-│     • Processes 8 pixels per byte (optimized)         │
-│     • Rotates: logical (x,y) → window (H-1-y, x)    │
-│     • Converts bits → RGB24 pixels                    │
-│                    │                                   │
-│                    ▼                                   │
-│  4. SDL2 Texture Update                             │
-│     • SDL_LockTexture()                              │
-│     • Write RGB24 data                               │
-│     • SDL_UnlockTexture()                           │
-│                    │                                   │
-│                    ▼                                   │
-│  5. SDL2 Render Present                            │
-│     • SDL_RenderCopy()                               │
-│     • SDL_RenderPresent()                           │
-│                    │                                   │
-│                    ▼                                   │
-│  6. Window Display (480×800)                         │
-│     ┌─────────────────────┐                          │
-│     │   SDL2 Window      │                          │
-│     │   (Rotated view)   │                          │
-│     └─────────────────────┘                          │
-│                                                         │
-└─────────────────────────────────────────────────────────────┘
-```
+![Rendering pipeline: framebuffer → HalDisplay → render_bw_to_texture → SDL2 texture → render present → window](docs/diagrams/arch-display-pipeline.svg)
 
 ### Storage Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│              Virtual SD Card System                      │
-├─────────────────────────────────────────────────────────────┤
-│                                                         │
-│  Crosspoint App                                          │
-│    │                                                     │
-│    │ SDCardManager::open("/book.epub")                 │
-│    ▼                                                     │
-│  FsFile API                                             │
-│    │                                                     │
-│    │ resolvePath("/book.epub")                          │
-│    │   → "./sdcard/book.epub"                          │
-│    ▼                                                     │
-│  POSIX File System                                       │
-│    │                                                     │
-│    │ fopen(), fread(), fwrite(), etc.                    │
-│    ▼                                                     │
-│  Host File System                                         │
-│    │                                                     │
-│    └─▶ ./sdcard/                                       │
-│         ├── book1.epub                                   │
-│         ├── book2.txt                                   │
-│         └── Novels/                                    │
-│              └── book3.epub                            │
-│                                                         │
-└─────────────────────────────────────────────────────────────┘
-```
+![Virtual SD card: Crosspoint App → FsFile API → POSIX → ./sdcard/ file tree](docs/diagrams/arch-storage.svg)
 
 ### Threading Model
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│              Thread Architecture                         │
-├─────────────────────────────────────────────────────────────┤
-│  Main Thread (UI Loop)                                   │
-│  ┌─────────────────────────────────────┐                 │
-│  │  while (true) {                   │                 │
-│  │    sim_display_pump_events()       │                 │
-│  │    loop()                        │                 │
-│  │      └─▶ Activity::loop()        │                 │
-│  │      └─▶ Activity::render()     │                 │
-│  │  }                               │                 │
-│  └─────────────────────────────────────┘                 │
-│                                                         │
-│  Background Thread (Thumbnail Prewarm)                    │
-│  ┌─────────────────────────────────────┐                 │
-│  │  prewarmLibraryEpubThumbs()      │                 │
-│  │    • Scans sdcard/ for .epub    │                 │
-│  │    • Generates thumbnails         │                 │
-│  │    • Writes to cache dir         │                 │
-│  │    • Non-blocking                │                 │
-│  └─────────────────────────────────────┘                 │
-│                                                         │
-│  Note: UI is interactive immediately; thumbnails          │
-│        appear as they're generated in background.         │
-│                                                         │
-└─────────────────────────────────────────────────────────────┘
-```
+![Thread architecture: Main thread (UI loop) and background thread (thumbnail prewarm)](docs/diagrams/arch-threading.svg)
 
 ---
 
@@ -800,26 +633,7 @@ This section documents the major features and improvements added to the Crosspoi
 
 ### Navigation Flow
 
-```
-┌─────────┐
-│  Boot   │
-└────┬────┘
-     │
-     ▼
-┌─────────┐
-│  Home   │ ◄──┐
-└────┬────┘    │
-     │         │
-     ├─▶ My Library ──▶ [Book Grid] ──▶ Reader
-     │         │
-     ├─▶ Recents ──▶ Reader
-     │         │
-     ├─▶ Settings
-     │         │
-     └─▶ [Other]         │
-                          │
-                    Back/Home
-```
+![Navigation flow: Boot → Home → My Library / Recents / Settings / Other; Back returns to Home](docs/diagrams/usage-navigation-flow.svg)
 
 ### Library Navigation
 
@@ -945,27 +759,7 @@ cmake .. -DCROSSPOINT_ROOT=/absolute/path/to/Crosspoint
 
 ### Project Structure
 
-```
-crosspoint-emulator/
-├── CMakeLists.txt          # Build configuration
-├── README.md              # This file
-├── build/                 # Build output (gitignored)
-├── docs/                  # Documentation
-│   └── UI-UX-LIBRARY-PLAN.md
-├── sdcard/                # Virtual SD card (gitignored)
-└── sim/                   # Simulator HAL implementation
-    ├── include/           # HAL headers (match device HAL)
-    │   ├── HalDisplay.h
-    │   ├── HalGPIO.h
-    │   ├── SDCardManager.h
-    │   └── [Arduino/ESP stubs]
-    └── src/              # HAL implementations
-        ├── main_sim.cpp   # Entry point
-        ├── sim_display.cpp
-        ├── sim_gpio.cpp
-        ├── sim_storage.cpp
-        └── [stub implementations]
-```
+![Project structure: crosspoint-emulator with CMakeLists, README, build, docs, sdcard, sim (include + src)](docs/diagrams/dev-project-structure.svg)
 
 ### Key Files
 
@@ -1106,15 +900,34 @@ When the Crosspoint HAL or `main.cpp` changes, the sim HAL in `sim/include/` and
 
 ---
 
-## License
-
-[Add your license information here]
-
----
-
 ## Contributing
 
-[Add contribution guidelines here]
+We welcome contributions! To help us keep Crosspoint Emulator clean and consistent, please follow these steps:
+
+1. **Fork and Clone**: Fork the repo and clone your version locally.
+2. **Branch**: Create a new branch for your feature or bugfix:  
+   `git checkout -b your-feature-description`
+3. **Code Style**:  
+   - Follow current code structure and naming conventions.  
+   - Use C++17 features (but no newer).
+   - Keep UI logic in activities or themes as appropriate.  
+   - Centralize constants in `UxConstants.h` or relevant header.
+4. **Testing**:  
+   - Test on your platform (macOS, Windows, or Linux).
+   - Make sure the emulator builds (`cmake`, `make`) and runs without errors.
+   - If changing UI, verify both Classic and Lyra themes.
+5. **Commits**:  
+   - Write clear, descriptive commit messages.
+   - Squash trivial commits before submitting a PR.
+6. **Pull Request**:  
+   - Open a pull request on GitHub describing:
+     - What the change does
+     - Which files are affected
+     - How to test/review it
+
+Please be patient—reviews may take a few days. For major features or refactors, open an issue first to discuss plans.
+
+Thank you for helping improve Crosspoint Emulator!
 
 ---
 

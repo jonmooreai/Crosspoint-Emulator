@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 340" width="100%">
+<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>
+<text x="210.0" y="28" style="font:bold 16px system-ui;fill:#111;text-anchor:middle">Virtual SD Card System</text>
+<line x1="210.0" y1="40" x2="210.0" y2="58" style="stroke:#333;stroke-width:1.5;fill:none" marker-end="url(#arrowhead)" />
+<rect x="80" y="58" width="260" height="36" style="fill:#fff;stroke:#333;stroke-width:1.5"/>
+<text x="210.0" y="80.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">Crosspoint App  →  SDCardManager::open("/book.epub")</text>
+<line x1="210.0" y1="94" x2="210.0" y2="112" style="stroke:#333;stroke-width:1.5;fill:none" marker-end="url(#arrowhead)" />
+<rect x="80" y="112" width="260" height="36" style="fill:#fff;stroke:#333;stroke-width:1.5"/>
+<text x="210.0" y="134.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">FsFile API  →  resolvePath("/book.epub")  →  "./sdcard/book.epub"</text>
+<line x1="210.0" y1="148" x2="210.0" y2="166" style="stroke:#333;stroke-width:1.5;fill:none" marker-end="url(#arrowhead)" />
+<rect x="80" y="166" width="260" height="36" style="fill:#fff;stroke:#333;stroke-width:1.5"/>
+<text x="210.0" y="188.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">POSIX File System  (fopen, fread, fwrite)</text>
+<line x1="210.0" y1="202" x2="210.0" y2="220" style="stroke:#333;stroke-width:1.5;fill:none" marker-end="url(#arrowhead)" />
+<rect x="80" y="220" width="260" height="100" style="fill:#fff;stroke:#333;stroke-width:1.5"/>
+<text x="210.0" y="242.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">./sdcard/</text>
+<text x="210.0" y="258.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">  ├── book1.epub</text>
+<text x="210.0" y="274.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">  ├── book2.txt</text>
+<text x="210.0" y="290.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">  └── Novels/</text>
+<text x="210.0" y="306.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">        └── book3.epub</text>
+</svg>

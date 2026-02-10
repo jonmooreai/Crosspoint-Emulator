@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 520" width="100%">
+<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>
+<text x="210.0" y="28" style="font:bold 16px system-ui;fill:#111;text-anchor:middle">Crosspoint Rendering Pipeline</text>
+<rect x="30" y="50" width="360" height="62" style="fill:#fff;stroke:#333;stroke-width:1.5"/>
+<text x="210.0" y="77.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">1. Application draws to framebuffer</text>
+<text x="210.0" y="93.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">uint8_t frameBuffer[BUFFER_SIZE]  (800×480 bits)</text>
+<line x1="210.0" y1="112" x2="210.0" y2="127" style="stroke:#333;stroke-width:1.5;fill:none" marker-end="url(#arrowhead)" />
+<rect x="30" y="122" width="360" height="62" style="fill:#fff;stroke:#333;stroke-width:1.5"/>
+<text x="210.0" y="149.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">2. HalDisplay::displayBuffer()</text>
+<text x="210.0" y="165.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">Copies to internal buffer, triggers render</text>
+<line x1="210.0" y1="184" x2="210.0" y2="199" style="stroke:#333;stroke-width:1.5;fill:none" marker-end="url(#arrowhead)" />
+<rect x="30" y="194" width="360" height="62" style="fill:#fff;stroke:#333;stroke-width:1.5"/>
+<text x="210.0" y="221.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">3. sim_display.cpp: render_bw_to_texture()</text>
+<text x="210.0" y="237.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">8 pixels/byte, rotate (x,y)→(H-1-y,x), bits→RGB24</text>
+<line x1="210.0" y1="256" x2="210.0" y2="271" style="stroke:#333;stroke-width:1.5;fill:none" marker-end="url(#arrowhead)" />
+<rect x="30" y="266" width="360" height="62" style="fill:#fff;stroke:#333;stroke-width:1.5"/>
+<text x="210.0" y="293.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">4. SDL2 Texture Update</text>
+<text x="210.0" y="309.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">SDL_LockTexture / Write RGB24 / SDL_UnlockTexture</text>
+<line x1="210.0" y1="328" x2="210.0" y2="343" style="stroke:#333;stroke-width:1.5;fill:none" marker-end="url(#arrowhead)" />
+<rect x="30" y="338" width="360" height="62" style="fill:#fff;stroke:#333;stroke-width:1.5"/>
+<text x="210.0" y="365.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">5. SDL2 Render Present</text>
+<text x="210.0" y="381.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">SDL_RenderCopy / SDL_RenderPresent</text>
+<line x1="210.0" y1="400" x2="210.0" y2="415" style="stroke:#333;stroke-width:1.5;fill:none" marker-end="url(#arrowhead)" />
+<rect x="30" y="410" width="360" height="62" style="fill:#fff;stroke:#333;stroke-width:1.5"/>
+<text x="210.0" y="437.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">6. Window Display (480×800)</text>
+<text x="210.0" y="453.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">SDL2 Window (rotated view)</text>
+</svg>
