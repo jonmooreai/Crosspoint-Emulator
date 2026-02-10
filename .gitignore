@@ -1,0 +1,38 @@
+# Build artifacts
+build/
+*.o
+*.d
+*.a
+*.so
+*.dylib
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+
+# User content
+sdcard/
+.crosspoint/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Compiled binaries
+crosspoint_emulator
+*.exe
+
+# Temporary files
+*.tmp
+*.log
