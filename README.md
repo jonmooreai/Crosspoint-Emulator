@@ -1,6 +1,6 @@
 # Crosspoint Native Emulator
 
-Run the [Crosspoint](https://github.com/crosspoint/crosspoint) e-reader firmware on your computer with an SDL2 window (800×480), directory-backed "SD card," and keyboard input. No device or flashing required; useful for UI development and quick iteration.
+Run the [Crosspoint](https://github.com/crosspoint-reader/crosspoint-reader) e-reader firmware on your computer with an SDL2 window (800×480), directory-backed "SD card," and keyboard input. No device or flashing required; useful for UI development and quick iteration.
 
 ### Screenshot & demo
 
