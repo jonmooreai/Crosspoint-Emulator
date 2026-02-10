@@ -1,5 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" width="100%">
 <defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>
+<rect x="0" y="0" width="480" height="320" fill="#ffffff"/>
 <text x="240.0" y="28" style="font:bold 16px system-ui;fill:#111;text-anchor:middle">Project Structure</text>
 <text x="40" y="50" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:start">crosspoint-emulator/</text>
 <text x="40" y="72" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:start">├── CMakeLists.txt    # Build configuration</text>

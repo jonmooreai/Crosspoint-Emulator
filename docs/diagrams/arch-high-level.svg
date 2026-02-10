@@ -1,5 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 280" width="100%">
 <defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>
+<rect x="0" y="0" width="520" height="280" fill="#ffffff"/>
 <rect x="10" y="10" width="500" height="260" style="fill:#fafafa;stroke:#333;stroke-width:2"/>
 <text x="260.0" y="32" style="font:bold 16px system-ui;fill:#111;text-anchor:middle">Crosspoint Emulator</text>
 <rect x="40" y="50" width="160" height="88" style="fill:#fff;stroke:#333;stroke-width:1.5"/>

@@ -1,5 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 520" width="100%">
 <defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>
+<rect x="0" y="0" width="420" height="520" fill="#ffffff"/>
 <text x="210.0" y="28" style="font:bold 16px system-ui;fill:#111;text-anchor:middle">Crosspoint Rendering Pipeline</text>
 <rect x="30" y="50" width="360" height="62" style="fill:#fff;stroke:#333;stroke-width:1.5"/>
 <text x="210.0" y="77.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">1. Application draws to framebuffer</text>

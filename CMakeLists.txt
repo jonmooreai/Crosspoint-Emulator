@@ -48,6 +48,7 @@ set(SIM_SOURCES
   sim/src/sim_display.cpp
   sim/src/sim_gpio.cpp
   sim/src/sim_storage.cpp
+  sim/src/sim_spi_bus.cpp
   sim/src/arduino_stub.cpp
   sim/src/esp_stub.cpp
   sim/src/battery_stub.cpp

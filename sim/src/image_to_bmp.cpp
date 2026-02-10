@@ -17,6 +17,7 @@
 
 #include "ImageToBmpConverter.h"
 
+#include "Arduino.h"
 #include <HardwareSerial.h>
 #include <SdFat.h>
 
@@ -244,6 +245,11 @@ bool ImageToBmpConverter::imageToBmpStreamInternal(
     else ditherer2.nextRow();
 
     bmpOut.write(rowBuf.data(), bytesPerRow);
+
+    // Yield periodically so the UI thread can run (device-fidelity / single-core simulation).
+    if ((outY + 1) % 8 == 0) {
+      yield();
+    }
   }
 
   // Cleanup — only the stb_image buffer needs explicit freeing;

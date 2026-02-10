@@ -39,7 +39,8 @@ def gen_high_level():
     """Crosspoint Emulator high-level architecture."""
     w, h = 520, 280
     svg = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="100%">',
-           '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>']
+           '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>',
+           f'<rect x="0" y="0" width="{w}" height="{h}" fill="#ffffff"/>']
     # Outer box
     svg.append(f'<rect x="10" y="10" width="{w-20}" height="{h-20}" style="fill:#fafafa;stroke:#333;stroke-width:2"/>')
     svg.append(f'<text x="{w/2}" y="32" style="font:bold 16px system-ui;fill:#111;text-anchor:middle">Crosspoint Emulator</text>')
@@ -60,7 +61,8 @@ def gen_component_flow():
     """Component flow: main() -> setup -> loop."""
     w, h = 380, 320
     svg = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="100%">',
-           '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>']
+           '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>',
+           f'<rect x="0" y="0" width="{w}" height="{h}" fill="#ffffff"/>']
     cx = w / 2
     box(svg, cx - 60, 20, 120, 44, "main()  ← Entry point (main_sim.cpp)")
     arrow_down(svg, cx, 64, 85)
@@ -82,7 +84,8 @@ def gen_hal():
     """HAL abstraction layer."""
     w, h = 480, 320
     svg = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="100%">',
-           '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>']
+           '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>',
+           f'<rect x="0" y="0" width="{w}" height="{h}" fill="#ffffff"/>']
     box(svg, 40, 20, w - 80, 50, ["Crosspoint Application Code", "(Activities, Themes, Readers, UI Logic)"])
     arrow_down(svg, w/2, 70, 95)
     svg.append(f'<text x="{w/2}" y="88" style="{TEXT_STYLE}">Uses HAL interfaces</text>')
@@ -100,7 +103,8 @@ def gen_display_pipeline():
     """Display rendering pipeline (6 steps)."""
     w, h = 420, 520
     svg = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="100%">',
-           '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>']
+           '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>',
+           f'<rect x="0" y="0" width="{w}" height="{h}" fill="#ffffff"/>']
     svg.append(f'<text x="{w/2}" y="28" style="font:bold 16px system-ui;fill:#111;text-anchor:middle">Crosspoint Rendering Pipeline</text>')
     steps = [
         ("1. Application draws to framebuffer", "uint8_t frameBuffer[BUFFER_SIZE]  (800×480 bits)"),
@@ -123,7 +127,8 @@ def gen_storage():
     """Virtual SD card system."""
     w, h = 420, 340
     svg = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="100%">',
-           '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>']
+           '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>',
+           f'<rect x="0" y="0" width="{w}" height="{h}" fill="#ffffff"/>']
     svg.append(f'<text x="{w/2}" y="28" style="font:bold 16px system-ui;fill:#111;text-anchor:middle">Virtual SD Card System</text>')
     arrow_down(svg, w/2, 40, 58)
     box(svg, 80, 58, w - 160, 36, "Crosspoint App  →  SDCardManager::open(\"/book.epub\")")
@@ -137,29 +142,25 @@ def gen_storage():
 
 
 def gen_threading():
-    """Thread architecture: main + background."""
+    """Thread architecture: single main thread (matches device)."""
     w, h = 520, 300
     svg = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="100%">',
-           '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>']
-    svg.append(f'<text x="{w/2}" y="28" style="font:bold 16px system-ui;fill:#111;text-anchor:middle">Thread Architecture</text>')
-    box(svg, 40, 45, w/2 - 60, 110, [
-        "Main Thread (UI Loop)",
+           '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>',
+           f'<rect x="0" y="0" width="{w}" height="{h}" fill="#ffffff"/>']
+    svg.append(f'<text x="{w/2}" y="28" style="font:bold 16px system-ui;fill:#111;text-anchor:middle">Thread Architecture (matches device)</text>')
+    box(svg, 40, 45, w - 80, 180, [
+        "Single Main Thread",
         "while (true) {",
+        "  prewarmStep()     // one EPUB per frame",
         "  sim_display_pump_events()",
         "  loop()",
         "    → Activity::loop()",
         "    → Activity::render()",
-        "}"
+        "}",
+        "",
+        "Image conversion yields every 8 rows. Display and SD I/O serialized (shared SPI)."
     ])
-    box(svg, w/2 + 20, 45, w/2 - 60, 110, [
-        "Background Thread",
-        "prewarmLibraryEpubThumbs()",
-        "  • Scans sdcard/ for .epub",
-        "  • Generates thumbnails",
-        "  • Writes to cache dir",
-        "  • Non-blocking"
-    ])
-    svg.append(f'<text x="{w/2}" y="200" style="font:12px system-ui;fill:#333;text-anchor:middle">UI is interactive immediately; thumbnails appear as they are generated in background.</text>')
+    svg.append(f'<text x="{w/2}" y="255" style="font:11px system-ui;fill:#666;text-anchor:middle">Single core, same behavior as real device.</text>')
     return "\n".join(svg) + "\n</svg>"
 
 
@@ -167,7 +168,8 @@ def gen_navigation_flow():
     """Navigation flow: Boot → Home → Library / Recents / Settings."""
     w, h = 380, 280
     svg = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="100%">',
-           '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>']
+           '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>',
+           f'<rect x="0" y="0" width="{w}" height="{h}" fill="#ffffff"/>']
     box(svg, w/2 - 50, 20, 100, 40, "Boot")
     arrow_down(svg, w/2, 60, 85)
     box(svg, w/2 - 50, 85, 100, 40, "Home  ◄──")
@@ -185,7 +187,8 @@ def gen_project_structure():
     """Project directory structure."""
     w, h = 480, 320
     svg = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="100%">',
-           '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>']
+           '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>',
+           f'<rect x="0" y="0" width="{w}" height="{h}" fill="#ffffff"/>']
     svg.append(f'<text x="{w/2}" y="28" style="font:bold 16px system-ui;fill:#111;text-anchor:middle">Project Structure</text>')
     lines = [
         "crosspoint-emulator/",

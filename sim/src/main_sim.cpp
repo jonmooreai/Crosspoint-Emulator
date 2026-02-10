@@ -1,5 +1,7 @@
 // Emulator entry point: init SDL/sim, then run Crosspoint setup() and loop().
 // setup() and loop() are defined in Crosspoint src/main.cpp.
+// Behavior matches the real device: single core (prewarm on main thread with yields),
+// shared SPI (display and SD serialized).
 
 #include <Epub.h>
 #include <HardwareSerial.h>
@@ -11,7 +13,6 @@
 #include <cctype>
 #include <cstdio>
 #include <string>
-#include <thread>
 #include <unistd.h>
 
 // Crosspoint app entry points (from main.cpp)
@@ -28,51 +29,62 @@ bool endsWithEpub(const std::string& name) {
   return ext == ".epub";
 }
 
-// Background thumbnail prewarm — runs off the main thread so the UI is
-// interactive immediately after setup().  The main loop is not blocked.
 std::atomic<bool> g_prewarmDone{false};
 
-void prewarmLibraryEpubThumbs() {
-  FsFile root = SdMan.open("/", O_RDONLY);
-  if (!root || !root.isDirectory()) {
-    Serial.printf("[%lu] [SIM] Could not open SD root for thumb prewarm\n", millis());
-    g_prewarmDone.store(true);
+// Prewarm one EPUB per main-loop iteration so UI gets control between thumbnails
+// (matches device: single core, yields in image generation).
+static bool g_prewarmRootOpen = false;
+static FsFile g_prewarmRoot;
+
+void prewarmStep() {
+  if (g_prewarmDone.load()) return;
+
+  if (!g_prewarmRootOpen) {
+    g_prewarmRoot = SdMan.open("/", O_RDONLY);
+    if (!g_prewarmRoot || !g_prewarmRoot.isDirectory()) {
+      Serial.printf("[%lu] [SIM] Could not open SD root for thumb prewarm\n", millis());
+      g_prewarmDone.store(true);
+      return;
+    }
+    g_prewarmRootOpen = true;
     return;
   }
 
-  char name[512];
-  for (FsFile file = root.openNextFile(); file; file = root.openNextFile()) {
-    if (file.isDirectory()) {
-      file.close();
-      continue;
-    }
-    if (!file.getName(name, sizeof(name))) {
-      file.close();
-      continue;
-    }
-    file.close();
-
-    std::string filename(name);
-    if (!endsWithEpub(filename)) {
-      continue;
-    }
-
-    const std::string path = "/" + filename;
-    Epub epub(path, "/.crosspoint");
-    if (!epub.load(true, true)) {
-      Serial.printf("[%lu] [SIM] Failed to load EPUB for thumb prewarm: %s\n", millis(), path.c_str());
-      continue;
-    }
-
-    if (!epub.generateThumbBmp(kLibraryThumbHeight)) {
-      Serial.printf("[%lu] [SIM] Failed to prewarm thumb: %s\n", millis(), path.c_str());
-    } else {
-      Serial.printf("[%lu] [SIM] Prewarmed thumb: %s\n", millis(), path.c_str());
-    }
+  FsFile file = g_prewarmRoot.openNextFile();
+  if (!file) {
+    g_prewarmRoot.close();
+    g_prewarmRootOpen = false;
+    g_prewarmDone.store(true);
+    Serial.printf("[%lu] [SIM] Thumb prewarm complete\n", millis());
+    return;
   }
-  root.close();
-  g_prewarmDone.store(true);
-  Serial.printf("[%lu] [SIM] Thumb prewarm complete\n", millis());
+  if (file.isDirectory()) {
+    file.close();
+    return;
+  }
+  char name[512];
+  if (!file.getName(name, sizeof(name))) {
+    file.close();
+    return;
+  }
+  file.close();
+
+  std::string filename(name);
+  if (!endsWithEpub(filename)) {
+    return;
+  }
+
+  const std::string path = "/" + filename;
+  Epub epub(path, "/.crosspoint");
+  if (!epub.load(true, true)) {
+    Serial.printf("[%lu] [SIM] Failed to load EPUB for thumb prewarm: %s\n", millis(), path.c_str());
+    return;
+  }
+  if (!epub.generateThumbBmp(kLibraryThumbHeight)) {
+    Serial.printf("[%lu] [SIM] Failed to prewarm thumb: %s\n", millis(), path.c_str());
+  } else {
+    Serial.printf("[%lu] [SIM] Prewarmed thumb: %s\n", millis(), path.c_str());
+  }
 }
 }  // namespace
 
@@ -95,15 +107,11 @@ int main(int argc, char** argv) {
   printf("Crosspoint emulator: running setup() then loop(). Close window to exit.\n");
   setup();
 
-  // Launch thumbnail prewarm in a background thread so the UI is usable
-  // immediately.  The thread is detached — it writes only to the SD card
-  // cache directory and sets g_prewarmDone when finished.
-  std::thread prewarmThread(prewarmLibraryEpubThumbs);
-  prewarmThread.detach();
-
+  // Single main thread: one prewarm step per frame, then events and loop (matches device).
   while (true) {
+    prewarmStep();
     if (!sim_display_pump_events()) {
-      break;  // quit requested
+      break;
     }
     loop();
   }

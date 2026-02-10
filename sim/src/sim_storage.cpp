@@ -1,6 +1,7 @@
 #include "SDCardManager.h"
 #include "ArduinoStub.h"
 #include "SdFat.h"
+#include "sim_spi_bus.h"
 #include "WString.h"
 
 #include <algorithm>
@@ -46,6 +47,7 @@ FsFile& FsFile::operator=(FsFile&& other) noexcept {
 }
 
 void FsFile::close() {
+  SpiBusGuard guard;
   if (fp_) {
     fclose(fp_);
     fp_ = nullptr;
@@ -61,6 +63,7 @@ void FsFile::close() {
 }
 
 bool FsFile::openFullPath(const char* fullPath, oflag_t oflag) {
+  SpiBusGuard guard;
   close();
   if (!fullPath) return false;
   struct stat st;
@@ -99,6 +102,7 @@ bool FsFile::open(const char* path, oflag_t oflag) {
 }
 
 int FsFile::read() {
+  SpiBusGuard guard;
   if (!fp_) return -1;
   int c = fgetc(fp_);
   return c;
@@ -112,16 +116,19 @@ int FsFile::peek() {
 }
 
 int FsFile::read(uint8_t* buf, size_t size) {
+  SpiBusGuard guard;
   if (!fp_) return -1;
   return static_cast<int>(fread(buf, 1, size, fp_));
 }
 
 size_t FsFile::write(const uint8_t* buf, size_t size) {
+  SpiBusGuard guard;
   if (!fp_) return 0;
   return fwrite(buf, 1, size, fp_);
 }
 
 size_t FsFile::write(uint8_t c) {
+  SpiBusGuard guard;
   return fp_ && fputc(c, fp_) >= 0 ? 1 : 0;
 }
 

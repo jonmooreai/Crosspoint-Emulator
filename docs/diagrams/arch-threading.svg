@@ -1,20 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 300" width="100%">
 <defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker></defs>
-<text x="260.0" y="28" style="font:bold 16px system-ui;fill:#111;text-anchor:middle">Thread Architecture</text>
-<rect x="40" y="45" width="200.0" height="110" style="fill:#fff;stroke:#333;stroke-width:1.5"/>
-<text x="140.0" y="56.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">Main Thread (UI Loop)</text>
-<text x="140.0" y="72.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">while (true) {</text>
-<text x="140.0" y="88.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">  sim_display_pump_events()</text>
-<text x="140.0" y="104.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">  loop()</text>
-<text x="140.0" y="120.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">    → Activity::loop()</text>
-<text x="140.0" y="136.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">    → Activity::render()</text>
-<text x="140.0" y="152.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">}</text>
-<rect x="280.0" y="45" width="200.0" height="110" style="fill:#fff;stroke:#333;stroke-width:1.5"/>
-<text x="380.0" y="64.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">Background Thread</text>
-<text x="380.0" y="80.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">prewarmLibraryEpubThumbs()</text>
-<text x="380.0" y="96.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">  • Scans sdcard/ for .epub</text>
-<text x="380.0" y="112.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">  • Generates thumbnails</text>
-<text x="380.0" y="128.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">  • Writes to cache dir</text>
-<text x="380.0" y="144.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">  • Non-blocking</text>
-<text x="260.0" y="200" style="font:12px system-ui;fill:#333;text-anchor:middle">UI is interactive immediately; thumbnails appear as they are generated in background.</text>
+<rect x="0" y="0" width="520" height="300" fill="#ffffff"/>
+<text x="260.0" y="28" style="font:bold 16px system-ui;fill:#111;text-anchor:middle">Thread Architecture (matches device)</text>
+<rect x="40" y="45" width="440" height="180" style="fill:#fff;stroke:#333;stroke-width:1.5"/>
+<text x="260.0" y="67.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">Single Main Thread</text>
+<text x="260.0" y="83.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">while (true) {</text>
+<text x="260.0" y="99.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">  prewarmStep()     // one EPUB per frame</text>
+<text x="260.0" y="115.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">  sim_display_pump_events()</text>
+<text x="260.0" y="131.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">  loop()</text>
+<text x="260.0" y="147.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">    → Activity::loop()</text>
+<text x="260.0" y="163.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">    → Activity::render()</text>
+<text x="260.0" y="179.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">}</text>
+<text x="260.0" y="195.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle"></text>
+<text x="260.0" y="211.0" style="font:14px system-ui, -apple-system, sans-serif;fill:#111;text-anchor:middle">Image conversion yields every 8 rows. Display and SD I/O serialized (shared SPI).</text>
+<text x="260.0" y="255" style="font:11px system-ui;fill:#666;text-anchor:middle">Single core, same behavior as real device.</text>
 </svg>

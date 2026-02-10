@@ -1,5 +1,6 @@
 #include "EInkDisplay.h"
 #include "HalDisplay.h"
+#include "sim_spi_bus.h"
 
 #include <SDL.h>
 #include <cstdlib>
@@ -185,6 +186,7 @@ void EInkDisplay::clearScreen(uint8_t color) const {
 
 void EInkDisplay::drawImage(const uint8_t* imageData, uint16_t x, uint16_t y, uint16_t w, uint16_t h,
                             bool) const {
+  SpiBusGuard guard;
   if (!imageData || !frameBuffer) return;
   const uint16_t rowBytes = (w + 7) / 8;
   for (uint16_t row = 0; row < h; row++) {
@@ -229,6 +231,7 @@ void EInkDisplay::cleanupGrayscaleBuffers(const uint8_t*) {
 }
 
 void EInkDisplay::displayBuffer(RefreshMode, bool) {
+  SpiBusGuard guard;
   if (!frameBuffer) return;
   memcpy(g_bwBuffer, frameBuffer, EInkDisplay::BUFFER_SIZE);
   g_hasBw = true;
@@ -242,6 +245,7 @@ void EInkDisplay::displayWindow(uint16_t, uint16_t, uint16_t, uint16_t) {
 }
 
 void EInkDisplay::displayGrayBuffer(bool) {
+  SpiBusGuard guard;
   if (!g_hasBw || !g_hasGrayLsb || !g_hasGrayMsb) return;
   render_gray_to_texture(g_bwBuffer, g_grayLsbBuffer, g_grayMsbBuffer);
 }
