@@ -2,19 +2,29 @@
 
 Run the [Crosspoint](https://github.com/crosspoint/crosspoint) e-reader firmware on your computer with an SDL2 window (800×480), directory-backed "SD card," and keyboard input. No device or flashing required; useful for UI development and quick iteration.
 
+### Screenshot & demo
+
+| Screenshot | Short demo (video) |
+|------------|--------------------|
+| ![Crosspoint Emulator — My Library](Crosspoint%20Emulator.png) | [Watch **Crosspoint Emulator.mp4**](Crosspoint%20Emulator.mp4) (My Library, grid view, keyboard navigation) |
+
+*Left: My Library grid with book covers and navigation. Right: click the link to play the demo video.*
+
 ---
 
 ## Table of Contents
 
 1. [Overview](#overview)
 2. [Download & Setup](#download--setup)
-3. [Building](#building)
-4. [Running](#running)
-5. [Architecture](#architecture)
-6. [New Features in Crosspoint Core](#new-features-in-crosspoint-core)
-7. [Usage Guide](#usage-guide)
-8. [Troubleshooting](#troubleshooting)
-9. [Development](#development)
+3. [Setup on macOS](#setup-on-macos)
+4. [Setup on Windows](#setup-on-windows)
+5. [Building](#building)
+6. [Running](#running)
+7. [Architecture](#architecture)
+8. [New Features in Crosspoint Core](#new-features-in-crosspoint-core)
+9. [Usage Guide](#usage-guide)
+10. [Troubleshooting](#troubleshooting)
+11. [Development](#development)
 
 ---
 
@@ -33,47 +43,141 @@ This allows rapid UI development, testing, and debugging without needing physica
 
 ## Download & Setup
 
-### Prerequisites
+Follow the steps for your operating system below. You need: a **C++17 compiler**, **CMake 3.16+**, **SDL2** (2.x, not SDL3), **Python 3**, **Git**, and the **Crosspoint** repository next to the emulator.
 
-Before building, ensure you have:
+### Setup on macOS
 
-1. **C++17 compiler**
-   - **macOS**: Xcode Command Line Tools (`xcode-select --install`)
-   - **Linux**: `gcc` or `clang` (usually pre-installed)
-   - **Windows**: MSVC 2017+ or MinGW-w64
+1. **Install Xcode Command Line Tools** (C++ compiler)
+   - Open **Terminal** (Applications → Utilities → Terminal, or press `Cmd+Space` and type `Terminal`).
+   - Run:
+     ```bash
+     xcode-select --install
+     ```
+   - Click **Install** in the dialog. Wait for the install to finish.
+   - Verify: `clang --version` (should print a version).
 
-2. **CMake 3.16+**
-   - **macOS**: 
-     - Via Homebrew: `brew install cmake`
-     - Or download `.dmg` from [cmake.org/download](https://cmake.org/download/)
-   - **Linux**: `sudo apt-get install cmake` (Debian/Ubuntu) or equivalent
-   - **Windows**: Download installer from cmake.org
+2. **Install Homebrew** (recommended for CMake and SDL2)
+   - In Terminal, run:
+     ```bash
+     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+     ```
+   - Follow the on-screen instructions. When done, it may ask you to run two `echo` commands to add Homebrew to your PATH — do that.
+   - Verify: `brew --version`.
 
-3. **SDL2** (version 2.x, **not** SDL3)
-   - **macOS**: `brew install sdl2`
-   - **Linux**: `sudo apt-get install libsdl2-dev` (Debian/Ubuntu)
-   - **Windows**: Download from [libsdl.org](https://www.libsdl.org/download-2.0.php)
-   - **Manual build**: See [Building SDL2 from Source](#building-sdl2-from-source) below
+3. **Install CMake**
+   - In Terminal:
+     ```bash
+     brew install cmake
+     ```
+   - Verify: `cmake --version` (should be 3.16 or higher).
 
-4. **Python 3** (for pre-build HTML generation)
-   - Usually pre-installed on macOS/Linux
-   - Verify: `python3 --version`
+4. **Install SDL2** (must be 2.x, not SDL3)
+   - In Terminal:
+     ```bash
+     brew install sdl2
+     ```
+   - Verify: `pkg-config --modversion sdl2` (should show a 2.x version).
 
-5. **Crosspoint Repository**
-   - Must be available as a sibling directory to this project
-   - Or set `CROSSPOINT_ROOT` environment variable/CMake flag
+5. **Install or verify Python 3**
+   - macOS often has Python 3 pre-installed. Check: `python3 --version`.
+   - If missing: `brew install python3`.
 
-### Downloading the Emulator
+6. **Install or verify Git**
+   - Xcode Command Line Tools include Git. Check: `git --version`.
+   - If missing: `brew install git`.
+
+7. **Clone the emulator and Crosspoint**
+   - Choose a folder (e.g. your home or Desktop). In Terminal:
+     ```bash
+     cd ~/Desktop
+     git clone https://github.com/crosspoint/crosspoint-emulator.git
+     cd crosspoint-emulator
+     git clone https://github.com/crosspoint/Crosspoint.git ../Crosspoint
+     ```
+   - Replace `https://github.com/crosspoint/...` with your actual repo URLs if you use a fork.
+   - The **Crosspoint** repo must be a **sibling** of **crosspoint-emulator** (e.g. `Desktop/crosspoint-emulator` and `Desktop/Crosspoint`).
+
+8. **Build the emulator** (see [Building](#building)): from `crosspoint-emulator` run:
+   ```bash
+   mkdir -p build && cd build
+   cmake ..
+   cmake --build .
+   ```
+
+---
+
+### Setup on Windows
+
+1. **Install Visual Studio Build Tools** (C++ compiler)
+   - Go to: **https://visualstudio.microsoft.com/visual-cpp-build-tools/**  
+     (or search “Build Tools for Visual Studio”).
+   - Download **“Build Tools for Visual Studio 2022”** (or current year).
+   - Run the installer. In the workload list, select **“Desktop development with C++”**.
+   - Install. Restart if prompted.
+   - Open **Developer Command Prompt for VS** (or **x64 Native Tools Command Prompt**) from the Start menu to use the compiler later, or add it to your PATH.
+
+2. **Install CMake**
+   - Go to: **https://cmake.org/download/**  
+   - Under **“Latest Release”**, download **Windows x64 Installer** (e.g. `cmake-3.29.x-windows-x86_64.msi`).
+   - Run the installer. When asked, choose **“Add CMake to the system PATH for all users”** (or “current user”).
+   - Close and reopen any terminal. Verify: `cmake --version`.
+
+3. **Install SDL2** (must be 2.x, not SDL3)
+   - Go to: **https://github.com/libsdl-org/SDL/releases**  
+   - In the latest **SDL2** release (e.g. 2.30.x), download **`SDL2-devel-2.30.x-mingw.zip`** (MinGW) **or** the **Visual C++** development package if you use MSVC (e.g. `SDL2-devel-2.30.x-VC.zip`).
+   - Extract the ZIP to a permanent folder, e.g. `C:\SDL2` — so you have `C:\SDL2\include`, `C:\SDL2\lib`, etc.
+   - Remember this path; you will pass it to CMake as `-DSDL2_ROOT=C:\SDL2` (see step 6).
+
+4. **Install or verify Python 3**
+   - Download from: **https://www.python.org/downloads/**  
+   - Run the installer. **Check “Add Python to PATH”**.
+   - Restart the terminal. Verify: `py --version` or `python3 --version`.
+
+5. **Install Git**
+   - Go to: **https://git-scm.com/download/win**  
+   - Download and run the Windows installer. Use default options (Git in PATH).
+   - Verify: `git --version`.
+
+6. **Clone the emulator and Crosspoint**
+   - Open **Command Prompt** or **PowerShell**. Go to a folder where you want the repos (e.g. Desktop):
+     ```cmd
+     cd %USERPROFILE%\Desktop
+     git clone https://github.com/crosspoint/crosspoint-emulator.git
+     cd crosspoint-emulator
+     git clone https://github.com/crosspoint/Crosspoint.git ..\Crosspoint
+     ```
+   - Replace the URLs with your fork if needed. **Crosspoint** must be a **sibling** of **crosspoint-emulator**.
+
+7. **Build the emulator**
+   - From the `crosspoint-emulator` folder:
+     ```cmd
+     mkdir build
+     cd build
+     cmake .. -DCROSSPOINT_ROOT=%USERPROFILE%\Desktop\Crosspoint -DSDL2_ROOT=C:\SDL2
+     ```
+   - Use the **actual** path to **Crosspoint** and the path where you extracted **SDL2** (e.g. `C:\SDL2`).
+   - Then:
+     ```cmd
+     cmake --build . --config Release
+     ```
+   - The executable will be in `build\Release\crosspoint_emulator.exe` (or `build\crosspoint_emulator.exe` depending on generator).
+
+---
+
+### Downloading the Emulator (generic)
+
+If you already have dependencies and only need the repos:
 
 ```bash
 # Clone the emulator repository
-git clone https://github.com/your-org/crosspoint-emulator.git
+git clone https://github.com/crosspoint/crosspoint-emulator.git
 cd crosspoint-emulator
 
-# Ensure Crosspoint is available (as sibling directory)
-# If not, clone it:
-git clone https://github.com/your-org/Crosspoint.git ../Crosspoint
+# Clone Crosspoint as a sibling directory (required)
+git clone https://github.com/crosspoint/Crosspoint.git ../Crosspoint
 ```
+
+*(Use your actual repo URLs if different, e.g. `https://github.com/jonmooreai/Crosspoint-Emulator` and the matching Crosspoint repo.)*
 
 ### Building SDL2 from Source
 
