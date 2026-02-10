@@ -90,14 +90,14 @@ Follow the steps for your operating system below. You need: a **C++17 compiler**
    - Choose a folder (e.g. your home or Desktop). In Terminal:
      ```bash
      cd ~/Desktop
-     git clone https://github.com/crosspoint/crosspoint-emulator.git
-     cd crosspoint-emulator
+     git clone https://github.com/jonmooreai/Crosspoint-Emulator.git
+     cd Crosspoint-Emulator
      git clone https://github.com/crosspoint-reader/crosspoint-reader.git ../Crosspoint
      ```
    - Replace with your fork URLs if different (Crosspoint firmware: `https://github.com/crosspoint-reader/crosspoint-reader`).
-   - The **Crosspoint** repo must be a **sibling** of **crosspoint-emulator** (e.g. `Desktop/crosspoint-emulator` and `Desktop/Crosspoint`).
+   - The **Crosspoint** repo must be a **sibling** of **Crosspoint-Emulator** (e.g. `Desktop/Crosspoint-Emulator` and `Desktop/Crosspoint`).
 
-8. **Build the emulator** (see [Building](#building)): from `crosspoint-emulator` run:
+8. **Build the emulator** (see [Building](#building)): from the emulator repo root (e.g. `Crosspoint-Emulator`) run:
    ```bash
    mkdir -p build && cd build
    cmake ..
@@ -142,14 +142,14 @@ Follow the steps for your operating system below. You need: a **C++17 compiler**
    - Open **Command Prompt** or **PowerShell**. Go to a folder where you want the repos (e.g. Desktop):
      ```cmd
      cd %USERPROFILE%\Desktop
-     git clone https://github.com/crosspoint/crosspoint-emulator.git
-     cd crosspoint-emulator
+     git clone https://github.com/jonmooreai/Crosspoint-Emulator.git
+     cd Crosspoint-Emulator
      git clone https://github.com/crosspoint-reader/crosspoint-reader.git ..\Crosspoint
      ```
-   - Replace the URLs with your fork if needed. **Crosspoint** must be a **sibling** of **crosspoint-emulator**.
+   - Replace the URLs with your fork if needed. **Crosspoint** must be a **sibling** of **Crosspoint-Emulator**.
 
 7. **Build the emulator**
-   - From the `crosspoint-emulator` folder:
+   - From the emulator folder (e.g. `Crosspoint-Emulator`):
      ```cmd
      mkdir build
      cd build
@@ -170,8 +170,8 @@ If you already have dependencies and only need the repos:
 
 ```bash
 # Clone the emulator repository
-git clone https://github.com/crosspoint/crosspoint-emulator.git
-cd crosspoint-emulator
+git clone https://github.com/jonmooreai/Crosspoint-Emulator.git
+cd Crosspoint-Emulator
 
 # Clone Crosspoint as a sibling directory (required)
 git clone https://github.com/crosspoint-reader/crosspoint-reader.git ../Crosspoint
@@ -211,7 +211,7 @@ If you need to build SDL2 manually (e.g., from Downloads folder):
 
 1. **Navigate to project directory**:
    ```bash
-   cd /path/to/crosspoint-emulator
+   cd /path/to/Crosspoint-Emulator
    ```
 
 2. **Create build directory**:
@@ -310,7 +310,7 @@ The emulator automatically detects `./sdcard/` relative to the current working d
 
 **Recommended**: Always run from project root:
 ```bash
-cd /path/to/crosspoint-emulator
+cd /path/to/Crosspoint-Emulator
 ./build/crosspoint_emulator
 ```
 
@@ -712,8 +712,8 @@ If you just cloned both repos and ran `cmake --build .` in `build/`, these fixes
 - **Symptom:** Clone fails, or you cloned the wrong repo and the build can’t find Crosspoint.
 - **Fix:** Use the correct Crosspoint firmware repo (required sibling of the emulator):
   ```bash
-  cd ~/Desktop   # or wherever you have crosspoint-emulator
-  cd crosspoint-emulator
+  cd ~/Desktop   # or wherever you have Crosspoint-Emulator
+  cd Crosspoint-Emulator
   # Clone Crosspoint firmware as a sibling named "Crosspoint" (so CMake finds it by default)
   git clone https://github.com/crosspoint-reader/crosspoint-reader.git ../Crosspoint
   ```
@@ -728,7 +728,7 @@ If you just cloned both repos and ran `cmake --build .` in `build/`, these fixes
 - **Symptom:** Build fails with `'HalStorage.h' file not found` (or similar missing HAL header).
 - **Fix:** The emulator supplies stubs for device HAL headers (including `HalStorage.h`) in `sim/include/`. Make sure you have the latest emulator so that `sim/include/HalStorage.h` exists:
   ```bash
-  cd ~/Desktop/crosspoint-emulator   # your emulator repo
+  cd ~/Desktop/Crosspoint-Emulator   # your emulator repo
   git pull origin main               # or your default branch
   cd build
   cmake ..
@@ -833,7 +833,7 @@ cmake .. -DCROSSPOINT_ROOT=/absolute/path/to/Crosspoint
 
 ### Project Structure
 
-![Project structure: crosspoint-emulator with CMakeLists, README, build, docs, sdcard, sim (include + src)](docs/diagrams/dev-project-structure.svg)
+![Project structure: Crosspoint-Emulator with CMakeLists, README, build, docs, sdcard, sim (include + src)](docs/diagrams/dev-project-structure.svg)
 
 ### Key Files
 
