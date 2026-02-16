@@ -14,6 +14,7 @@ class String : public Print {
   String(unsigned n) : s_(std::to_string(n)), readPos_(0) {}
   String(long n) : s_(std::to_string(n)), readPos_(0) {}
   String(unsigned long n) : s_(std::to_string(n)), readPos_(0) {}
+  String(size_t n) : s_(std::to_string(n)), readPos_(0) {}
 
   // Stream-like read for ArduinoJson deserializeJson(doc, string)
   int read() {

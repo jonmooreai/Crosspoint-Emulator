@@ -1,5 +1,7 @@
 #include "FreeRTOSStub.h"
 
+#include <condition_variable>
+#include <chrono>
 #include <thread>
 #include <unordered_map>
 #include <mutex>
@@ -31,6 +33,9 @@ struct TaskExit : std::exception {};
 struct TaskInfo {
   std::thread thread;
   std::atomic<bool> cancelled{false};
+  std::mutex notifyMutex;
+  std::condition_variable notifyCv;
+  uint32_t notifyCount = 0;
 };
 std::unordered_map<TaskHandle_t, TaskInfo*> s_tasks;
 std::mutex s_mutex;
@@ -94,6 +99,7 @@ void vTaskDelete(TaskHandle_t h) {
   if (info) {
     // Signal cancellation — the task will see this in vTaskDelay or xSemaphoreTake.
     info->cancelled.store(true);
+    info->notifyCv.notify_all();
     if (info->thread.joinable())
       info->thread.join();
     delete info;
@@ -129,4 +135,56 @@ void xSemaphoreGive(SemaphoreHandle_t m) {
 
 void vSemaphoreDelete(SemaphoreHandle_t m) {
   delete static_cast<std::mutex*>(m);
+}
+
+uint32_t ulTaskNotifyTake(int clearCountOnExit, unsigned timeout) {
+  if (!t_currentInfo) return 0;
+
+  std::unique_lock<std::mutex> lk(t_currentInfo->notifyMutex);
+  if (timeout == portMAX_DELAY) {
+    t_currentInfo->notifyCv.wait(lk, [] {
+      return (t_currentInfo && t_currentInfo->cancelled.load()) ||
+             (t_currentInfo && t_currentInfo->notifyCount > 0);
+    });
+  } else {
+    t_currentInfo->notifyCv.wait_for(lk, std::chrono::milliseconds(timeout), [] {
+      return (t_currentInfo && t_currentInfo->cancelled.load()) ||
+             (t_currentInfo && t_currentInfo->notifyCount > 0);
+    });
+  }
+
+  if (t_currentInfo->cancelled.load()) throw TaskExit();
+  if (t_currentInfo->notifyCount == 0) return 0;
+
+  uint32_t prev = t_currentInfo->notifyCount;
+  if (clearCountOnExit == pdTRUE) {
+    t_currentInfo->notifyCount = 0;
+  } else {
+    t_currentInfo->notifyCount -= 1;
+  }
+  return prev;
+}
+
+int xTaskNotify(TaskHandle_t handle, uint32_t value, eNotifyAction action) {
+  (void)value;
+  TaskInfo* info = nullptr;
+  {
+    std::lock_guard<std::mutex> lock(s_mutex);
+    auto it = s_tasks.find(handle);
+    if (it == s_tasks.end()) return 0;
+    info = it->second;
+  }
+  if (!info) return 0;
+
+  {
+    std::lock_guard<std::mutex> lk(info->notifyMutex);
+    if (action == eIncrement) {
+      if (info->notifyCount != UINT32_MAX) info->notifyCount += 1;
+    } else {
+      // Good enough for emulator: wake task for non-increment modes as well.
+      if (info->notifyCount != UINT32_MAX) info->notifyCount += 1;
+    }
+  }
+  info->notifyCv.notify_one();
+  return pdPASS;
 }

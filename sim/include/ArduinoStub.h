@@ -4,6 +4,16 @@
 #define PROGMEM
 #endif
 
+template <typename T, typename U>
+constexpr auto min(T a, U b) -> decltype((a < b) ? a : b) {
+  return (a < b) ? a : b;
+}
+
+template <typename T, typename U>
+constexpr auto max(T a, U b) -> decltype((a > b) ? a : b) {
+  return (a > b) ? a : b;
+}
+
 #include <cstdarg>
 #include <cstddef>
 #include <cstdint>
@@ -11,7 +21,19 @@
 #include <cstdlib>
 #include <cstring>
 #include <chrono>
+#include <string>
 #include <thread>
+
+#if defined(_MSC_VER) && !defined(__attribute__)
+#define __attribute__(x)
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+#define ARDUINO_PRINTF_LIKE(fmt_idx, first_arg) \
+  __attribute__((format(printf, fmt_idx, first_arg)))
+#else
+#define ARDUINO_PRINTF_LIKE(fmt_idx, first_arg)
+#endif
 
 // Minimal Arduino-like API for host build
 
@@ -84,7 +106,7 @@ class SerialStub : public Print {
     for (size_t i = 0; i < size; i++) putchar(static_cast<char>(buf[i]));
     return size;
   }
-  size_t printf(const char* fmt, ...) __attribute__((format(printf, 2, 3))) {
+  size_t printf(const char* fmt, ...) ARDUINO_PRINTF_LIKE(2, 3) {
     va_list args;
     va_start(args, fmt);
     char buf[512];
@@ -93,7 +115,18 @@ class SerialStub : public Print {
     if (n > 0) fwrite(buf, 1, static_cast<size_t>(n), stdout);
     return static_cast<size_t>(n);
   }
+  std::string readStringUntil(char terminator) {
+    std::string out;
+    int c = -1;
+    while (available() > 0 && (c = read()) >= 0) {
+      if (static_cast<char>(c) == terminator) break;
+      out.push_back(static_cast<char>(c));
+    }
+    return out;
+  }
 };
+
+using HWCDC = SerialStub;
 
 extern SerialStub Serial;
 
