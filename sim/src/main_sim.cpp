@@ -5,15 +5,13 @@
 
 #include <Epub.h>
 #include <HardwareSerial.h>
-#include <SDCardManager.h>
-#include <SdFat.h>
+#include <HalStorage.h>
 #include "sim_display.h"
 
 #include <atomic>
 #include <cctype>
 #include <cstdio>
 #include <string>
-#include <unistd.h>
 
 // Crosspoint app entry points (from main.cpp)
 extern void setup();
@@ -40,7 +38,7 @@ void prewarmStep() {
   if (g_prewarmDone.load()) return;
 
   if (!g_prewarmRootOpen) {
-    g_prewarmRoot = SdMan.open("/", O_RDONLY);
+    g_prewarmRoot = Storage.open("/", O_RDONLY);
     if (!g_prewarmRoot || !g_prewarmRoot.isDirectory()) {
       Serial.printf("[%lu] [SIM] Could not open SD root for thumb prewarm\n", millis());
       g_prewarmDone.store(true);
@@ -91,13 +89,6 @@ void prewarmStep() {
 int main(int argc, char** argv) {
   (void)argc;
   (void)argv;
-
-  // Ensure ./sdcard is findable: if run from build/, chdir to project root
-  if (access("./sdcard", F_OK) != 0 && access("../sdcard", F_OK) == 0) {
-    if (chdir("..") != 0) {
-      fprintf(stderr, "Could not chdir to project root (../sdcard)\n");
-    }
-  }
 
   if (!sim_display_init()) {
     fprintf(stderr, "sim_display_init failed\n");

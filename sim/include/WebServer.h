@@ -34,6 +34,12 @@ class WebServer {
   void handleClient() {}
   void send(int code, const char* type, const char* content) { (void)code; (void)type; (void)content; }
   void send(int code, const char* type, const String& content) { (void)code; (void)type; (void)content; }
+  void send_P(int code, const char* type, const char* content, size_t contentLength) {
+    (void)code;
+    (void)type;
+    (void)content;
+    (void)contentLength;
+  }
   void sendContent(const char* content) { (void)content; }
   void sendContent(const String& content) { (void)content; }
   void sendHeader(const char* name, const char* value, bool first = false) {

@@ -33,6 +33,9 @@ class FsFile : public Stream {
   int peek() override;
   size_t write(uint8_t c) override;
   size_t write(const uint8_t* buf, size_t size) override;
+  size_t write(const void* buf, size_t size) {
+    return write(reinterpret_cast<const uint8_t*>(buf), size);
+  }
   size_t print(const class String& s);
   int available() override;
   bool isDirectory() const { return isDir_; }

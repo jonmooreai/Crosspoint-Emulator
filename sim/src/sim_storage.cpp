@@ -8,10 +8,18 @@
 #include <cerrno>
 #include <climits>
 #include <cstring>
-#include <dirent.h>
+#include <filesystem>
 #include <stdlib.h>
 #include <sys/stat.h>
-#include <unistd.h>
+
+namespace fs = std::filesystem;
+
+namespace {
+struct DirIteratorState {
+  fs::directory_iterator it;
+  fs::directory_iterator end;
+};
+}  // namespace
 
 std::string FsFile::s_rootPath = "./sdcard";
 
@@ -53,7 +61,7 @@ void FsFile::close() {
     fp_ = nullptr;
   }
   if (dir_) {
-    closedir(static_cast<DIR*>(dir_));
+    delete static_cast<DirIteratorState*>(dir_);
     dir_ = nullptr;
   }
   isDir_ = false;
@@ -66,24 +74,25 @@ bool FsFile::openFullPath(const char* fullPath, oflag_t oflag) {
   SpiBusGuard guard;
   close();
   if (!fullPath) return false;
-  struct stat st;
-  if (stat(fullPath, &st) != 0) {
+  std::error_code ec;
+  if (!fs::exists(fs::path(fullPath), ec) || ec) {
     if ((oflag & O_CREAT) && (oflag & (O_WRONLY | O_RDWR))) {
-      std::string p(fullPath);
-      for (size_t i = 1; i < p.size(); i++) {
-        if (p[i] == '/') {
-          std::string part = p.substr(0, i);
-          if (mkdir(part.c_str(), 0755) != 0 && errno != EEXIST) return false;
-        }
+      const fs::path parent = fs::path(fullPath).parent_path();
+      if (!parent.empty()) {
+        fs::create_directories(parent, ec);
+        if (ec) return false;
       }
     }
     fp_ = fopen(fullPath, (oflag & O_RDWR) ? "wb+" : "wb");
     if (fp_) filePath_ = fullPath;
     return fp_ != nullptr;
   }
-  if (S_ISDIR(st.st_mode)) {
-    DIR* d = opendir(fullPath);
-    if (!d) return false;
+  if (fs::is_directory(fs::path(fullPath), ec) && !ec) {
+    auto* d = new DirIteratorState{fs::directory_iterator(fs::path(fullPath), ec), fs::directory_iterator()};
+    if (ec) {
+      delete d;
+      return false;
+    }
     dir_ = d;
     isDir_ = true;
     dirPath_ = fullPath;
@@ -168,7 +177,11 @@ int FsFile::available() {
 }
 
 void FsFile::rewindDirectory() {
-  if (dir_) rewinddir(static_cast<DIR*>(dir_));
+  if (!dir_) return;
+  auto* d = static_cast<DirIteratorState*>(dir_);
+  std::error_code ec;
+  d->it = fs::directory_iterator(fs::path(dirPath_), ec);
+  if (ec) d->it = d->end;
 }
 
 bool FsFile::getName(char* name, size_t size) const {
@@ -194,15 +207,19 @@ size_t FsFile::size() const {
 
 FsFile FsFile::openNextFile() {
   if (!dir_) return FsFile();
-  struct dirent* ent = readdir(static_cast<DIR*>(dir_));
-  while (ent && (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0))
-    ent = readdir(static_cast<DIR*>(dir_));
-  if (!ent) return FsFile();
-  std::string fullPath = dirPath_ + "/" + ent->d_name;
-  FsFile next;
-  if (!next.openFullPath(fullPath.c_str(), O_RDONLY)) return FsFile();
-  next.setCurrentName(ent->d_name);
-  return next;
+  auto* d = static_cast<DirIteratorState*>(dir_);
+  while (d->it != d->end) {
+    const fs::path entryPath = d->it->path();
+    ++d->it;
+    const std::string name = entryPath.filename().string();
+    if (name == "." || name == "..") continue;
+
+    FsFile next;
+    if (!next.openFullPath(entryPath.string().c_str(), O_RDONLY)) return FsFile();
+    next.setCurrentName(name);
+    return next;
+  }
+  return FsFile();
 }
 
 bool FsFile::rename(const char* newPath) {
@@ -218,43 +235,35 @@ bool SdFat::begin(int, uint32_t) {
 }
 
 FsFile SdFat::open(const char* path, oflag_t oflag) {
-  FsFile f;
-  f.open(path, oflag);
-  return f;
+  FsFile next;
+  next.open(path, oflag);
+  return next;
 }
 
 bool SdFat::mkdir(const char* path, bool pFlag) {
-  std::string full = FsFile::resolvePath(path);
+  const fs::path full(FsFile::resolvePath(path));
   if (full.empty()) return false;
+  std::error_code ec;
   if (pFlag) {
-    // Create parent directories incrementally.
-    // Example: /a/b/c -> mkdir(/a), mkdir(/a/b), mkdir(/a/b/c)
-    const size_t start = (full[0] == '/') ? 1 : 0;
-    for (size_t i = start; i <= full.size(); ++i) {
-      if (i == full.size() || full[i] == '/') {
-        if (i == 0) continue;
-        const std::string part = full.substr(0, i);
-        if (part.empty()) continue;
-        if (::mkdir(part.c_str(), 0755) != 0 && errno != EEXIST) return false;
-      }
-    }
-    return true;
+    fs::create_directories(full, ec);
+    return !ec;
   }
-  return ::mkdir(full.c_str(), 0755) == 0 || errno == EEXIST;
+  return fs::create_directory(full, ec) || fs::exists(full);
 }
 
 bool SdFat::exists(const char* path) {
-  std::string full = FsFile::resolvePath(path);
-  struct stat st;
-  return stat(full.c_str(), &st) == 0;
+  std::error_code ec;
+  return fs::exists(fs::path(FsFile::resolvePath(path)), ec) && !ec;
 }
 
 bool SdFat::remove(const char* path) {
-  return ::remove(FsFile::resolvePath(path).c_str()) == 0;
+  std::error_code ec;
+  return fs::remove(fs::path(FsFile::resolvePath(path)), ec) && !ec;
 }
 
 bool SdFat::rmdir(const char* path) {
-  return ::rmdir(FsFile::resolvePath(path).c_str()) == 0;
+  std::error_code ec;
+  return fs::remove(fs::path(FsFile::resolvePath(path)), ec) && !ec;
 }
 
 SDCardManager SDCardManager::instance;
@@ -262,18 +271,54 @@ SDCardManager SDCardManager::instance;
 SDCardManager::SDCardManager() = default;
 
 bool SDCardManager::begin() {
-  // Use absolute path so directory listing works regardless of process cwd (e.g. when run from build/)
-  char resolved[PATH_MAX];
-  if (realpath("./sdcard", resolved) != nullptr) {
-    FsFile::setRootPath(resolved);
-    Serial.printf("[%lu] [SD] Sim SD card %s\n", millis(), resolved);
-  } else if (realpath("../sdcard", resolved) != nullptr) {
-    FsFile::setRootPath(resolved);
-    Serial.printf("[%lu] [SD] Sim SD card %s (from ../sdcard)\n", millis(), resolved);
-  } else {
-    FsFile::setRootPath("./sdcard");
-    Serial.printf("[%lu] [SD] Sim SD card (./sdcard, realpath failed)\n", millis());
+  // Resolve SD root in a deterministic order independent of process cwd.
+  // Prefer project-root sdcard path from compile-time CMake source dir.
+#ifdef CROSSPOINT_EMULATOR_ROOT
+  const fs::path projectSd = fs::path(CROSSPOINT_EMULATOR_ROOT) / "sdcard";
+#else
+  const fs::path projectSd = fs::path("sdcard");
+#endif
+
+  const fs::path candidates[] = {
+      projectSd,
+      fs::path("sdcard"),
+      fs::path("../sdcard"),
+      fs::path("../../sdcard"),
+      fs::path("../../../sdcard"),
+  };
+
+  std::error_code ec;
+  fs::path resolved;
+  for (const auto& candidate : candidates) {
+    if (fs::exists(candidate, ec) && !ec && fs::is_directory(candidate, ec) && !ec) {
+      resolved = fs::absolute(candidate, ec);
+      if (!ec) break;
+    }
+    ec.clear();
   }
+
+  // If nothing exists yet, create project-root sdcard so filesystem APIs keep working.
+  if (resolved.empty()) {
+    fs::create_directories(projectSd, ec);
+    if (!ec) {
+      resolved = fs::absolute(projectSd, ec);
+      if (!ec) {
+        const std::string root = resolved.string();
+        FsFile::setRootPath(root);
+        Serial.printf("[%lu] [SD] Created sim SD card %s\n", millis(), root.c_str());
+        initialized = true;
+        return initialized;
+      }
+    }
+    FsFile::setRootPath("./sdcard");
+    Serial.printf("[%lu] [SD] Sim SD card fallback to ./sdcard (path resolve failed)\n", millis());
+    initialized = true;
+    return initialized;
+  }
+
+  const std::string root = resolved.string();
+  FsFile::setRootPath(root);
+  Serial.printf("[%lu] [SD] Sim SD card %s\n", millis(), root.c_str());
   initialized = true;
   return initialized;
 }
