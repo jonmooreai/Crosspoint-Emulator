@@ -9,6 +9,7 @@ class ESPClass {
   uint32_t getFreeHeap() const { return 8 * 1024 * 1024; }   // 8 MB
   uint32_t getHeapSize() const { return 16 * 1024 * 1024; }   // 16 MB
   uint32_t getMinFreeHeap() const { return 6 * 1024 * 1024; }  // 6 MB
+  uint32_t getMaxAllocHeap() const { return 4 * 1024 * 1024; }  // 4 MB contiguous block
   void restart() { /* no-op in sim */ }
 };
 

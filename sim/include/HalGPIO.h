@@ -15,6 +15,8 @@
 
 class HalGPIO {
  public:
+  enum class DeviceType { X3, X4 };
+
   HalGPIO() = default;
 
   void begin();
@@ -35,6 +37,10 @@ class HalGPIO {
   enum class WakeupReason { PowerButton, AfterFlash, AfterUSBPower, Other };
 
   WakeupReason getWakeupReason() const { return WakeupReason::PowerButton; }
+  bool deviceIsX3() const { return deviceType_ == DeviceType::X3; }
+  bool deviceIsX4() const { return deviceType_ == DeviceType::X4; }
+  void verifyPowerButtonWakeup(uint16_t, bool) {}
+  bool wasUsbStateChanged() const { return false; }
 
   static constexpr uint8_t BTN_BACK = 0;
   static constexpr uint8_t BTN_CONFIRM = 1;
@@ -45,9 +51,12 @@ class HalGPIO {
   static constexpr uint8_t BTN_POWER = 6;
 
  private:
+  DeviceType deviceType_ = DeviceType::X4;
   unsigned long pressStartMs_ = 0;
   uint8_t lastState_ = 0;
   uint8_t prevState_ = 0;
   bool anyPressed_ = false;
   bool anyReleased_ = false;
 };
+
+inline HalGPIO gpio;

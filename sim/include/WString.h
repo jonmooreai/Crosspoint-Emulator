@@ -10,10 +10,13 @@ class String : public Print {
   String(const char* c) : s_(c ? c : ""), readPos_(0) {}
   String(const std::string& s) : s_(s), readPos_(0) {}
   String(char c) : s_(1, c), readPos_(0) {}
+  String(signed char c) : s_(1, static_cast<char>(c)), readPos_(0) {}
+  String(unsigned char c) : s_(1, static_cast<char>(c)), readPos_(0) {}
   String(int n) : s_(std::to_string(n)), readPos_(0) {}
   String(unsigned n) : s_(std::to_string(n)), readPos_(0) {}
   String(long n) : s_(std::to_string(n)), readPos_(0) {}
   String(unsigned long n) : s_(std::to_string(n)), readPos_(0) {}
+  String(size_t n) : s_(std::to_string(n)), readPos_(0) {}
 
   // Stream-like read for ArduinoJson deserializeJson(doc, string)
   int read() {
@@ -51,6 +54,8 @@ class String : public Print {
     if (s_.empty()) return 0;
     return std::stol(s_, nullptr, 0);
   }
+  char operator[](size_t index) const { return index < s_.size() ? s_[index] : '\0'; }
+  char& operator[](size_t index) { return s_[index]; }
 
   String& operator=(const char* c) {
     s_ = c ? c : "";
@@ -103,6 +108,26 @@ class String : public Print {
     size_t end = s_.find_last_not_of(" \t\r\n");
     s_ = s_.substr(start, end == std::string::npos ? std::string::npos : end - start + 1);
   }
+
+  void replace(const char* find, const char* replacement) {
+    if (!find || !*find) return;
+    const std::string repl = replacement ? replacement : "";
+    size_t pos = 0;
+    const size_t findLen = std::strlen(find);
+    while ((pos = s_.find(find, pos)) != std::string::npos) {
+      s_.replace(pos, findLen, repl);
+      pos += repl.size();
+    }
+  }
+
+  void replace(size_t index, size_t count, const char* replacement) {
+    s_.replace(index, count, replacement ? replacement : "");
+  }
+
+  friend bool operator<(const String& a, const String& b) { return a.s_ < b.s_; }
+  friend bool operator>(const String& a, const String& b) { return a.s_ > b.s_; }
+  friend bool operator<=(const String& a, const String& b) { return a.s_ <= b.s_; }
+  friend bool operator>=(const String& a, const String& b) { return a.s_ >= b.s_; }
 
   std::string& str() { return s_; }
   const std::string& str() const { return s_; }

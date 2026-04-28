@@ -5,6 +5,7 @@
 #include <SDL.h>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 
 // Rotated 90° clockwise: logical 800×480 → window 480×800
 static const int WINDOW_WIDTH = static_cast<int>(EInkDisplay::DISPLAY_HEIGHT);   // 480
@@ -143,6 +144,26 @@ bool sim_display_init(void) {
   return true;
 }
 
+bool sim_display_save_screenshot(const char* path) {
+  if (!g_renderer || !g_window || !path || !*path) return false;
+
+  int width = 0;
+  int height = 0;
+  SDL_GetRendererOutputSize(g_renderer, &width, &height);
+  if (width <= 0 || height <= 0) return false;
+
+  SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormat(0, width, height, 32, SDL_PIXELFORMAT_ARGB8888);
+  if (!surface) return false;
+
+  const int readResult = SDL_RenderReadPixels(g_renderer, nullptr, SDL_PIXELFORMAT_ARGB8888, surface->pixels, surface->pitch);
+  bool ok = false;
+  if (readResult == 0) {
+    ok = SDL_SaveBMP(surface, path) == 0;
+  }
+  SDL_FreeSurface(surface);
+  return ok;
+}
+
 void sim_display_shutdown(void) {
   if (g_texture) {
     SDL_DestroyTexture(g_texture);
@@ -264,6 +285,10 @@ void HalDisplay::drawImage(const uint8_t* d, uint16_t x, uint16_t y, uint16_t w,
                            bool pm) const {
   einkDisplay.drawImage(d, x, y, w, h, pm);
 }
+void HalDisplay::drawImageTransparent(const uint8_t* d, uint16_t x, uint16_t y, uint16_t w, uint16_t h,
+                                      bool pm) const {
+  einkDisplay.drawImage(d, x, y, w, h, pm);
+}
 void HalDisplay::displayBuffer(RefreshMode mode, bool fadingFix) {
   einkDisplay.displayBuffer(static_cast<EInkDisplay::RefreshMode>(mode), fadingFix);
 }
@@ -286,9 +311,16 @@ void HalDisplay::cleanupGrayscaleBuffers(const uint8_t* b) {
 }
 void HalDisplay::displayGrayBuffer(bool fadingFix) { einkDisplay.displayGrayBuffer(fadingFix); }
 
+HalDisplay display;
+
 bool sim_display_pump_events(void) {
   SDL_Event e;
   while (SDL_PollEvent(&e)) {
+    if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_F12) {
+      const char* envPath = std::getenv("SIM_SCREENSHOT_PATH");
+      const char* screenshotPath = (envPath && *envPath) ? envPath : "sim-screenshot.bmp";
+      sim_display_save_screenshot(screenshotPath);
+    }
     if (e.type == SDL_QUIT) return false;
   }
   return true;

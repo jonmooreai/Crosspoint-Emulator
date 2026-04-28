@@ -43,7 +43,7 @@ This allows rapid UI development, testing, and debugging without needing physica
 
 ## Download & Setup
 
-Follow the steps for your operating system below. You need: a **C++17 compiler**, **CMake 3.16+**, **SDL2** (2.x, not SDL3), **Python 3**, **Git**, and the **Crosspoint** repository next to the emulator.
+Follow the steps for your operating system below. You need: a **C++20 compiler**, **CMake 3.16+**, **SDL2** (2.x, not SDL3), **Python 3**, **Git**, and the **Crosspoint** repository next to the emulator.
 
 ### Setup on macOS
 
@@ -304,6 +304,18 @@ The build process:
    ```
 
 4. **Exit**: Close the SDL window (click X or press Alt+F4).
+
+### Control CLI
+
+For automation and repeatable UI checks, the emulator also exposes a machine-readable stdin/stdout control channel:
+
+```bash
+./crosspoint_emulator --control-stdio
+```
+
+Use it to inspect the current screen, wait on UI state transitions, inject semantic text input, trigger screenshots,
+and drive button navigation without timing-only scripts. See [docs/control-stdio.md](docs/control-stdio.md) for the
+command set and JSON event format.
 
 ### Running from Different Directories
 

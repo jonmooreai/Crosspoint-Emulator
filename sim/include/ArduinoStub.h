@@ -4,6 +4,14 @@
 #define PROGMEM
 #endif
 
+#ifndef RTC_NOINIT_ATTR
+#define RTC_NOINIT_ATTR
+#endif
+
+#if defined(_MSC_VER) && !defined(__attribute__)
+#define __attribute__(x)
+#endif
+
 #include <cstdarg>
 #include <cstddef>
 #include <cstdint>
@@ -11,7 +19,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <chrono>
+#include <string>
 #include <thread>
+#include <intrin.h>
 
 // Minimal Arduino-like API for host build
 
@@ -22,10 +32,30 @@ inline unsigned long millis() {
       std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count());
 }
 
-// Cap delay to 1ms in the emulator to keep the UI responsive.
-// On the real device delay(10) saves power; in the sim it just adds latency.
+inline unsigned long micros() {
+  static const auto start = std::chrono::steady_clock::now();
+  auto now = std::chrono::steady_clock::now();
+  return static_cast<unsigned long>(
+      std::chrono::duration_cast<std::chrono::microseconds>(now - start).count());
+}
+
+inline unsigned long simDelayCapMs() {
+  static const unsigned long value = []() -> unsigned long {
+    const char* raw = std::getenv("SIM_DELAY_CAP_MS");
+    if (!raw || !*raw) return 1;
+    char* end = nullptr;
+    const unsigned long parsed = std::strtoul(raw, &end, 10);
+    if (end == raw || *end != '\0') return 1;
+    return parsed;
+  }();
+  return value;
+}
+
+// By default the emulator caps delay() to 1ms to keep the UI responsive.
+// Network and background-job tests can raise this cap through SIM_DELAY_CAP_MS.
 inline void delay(unsigned long ms) {
-  unsigned long capped = ms > 1 ? 1 : ms;
+  const unsigned long capMs = simDelayCapMs();
+  unsigned long capped = ms > capMs ? capMs : ms;
   if (capped > 0) std::this_thread::sleep_for(std::chrono::milliseconds(capped));
 }
 
@@ -41,6 +71,8 @@ inline long random(long min, long max) {
   return min + random(max - min);
 }
 inline void randomSeed(unsigned long) { /* no-op */ }
+
+class String;
 
 class Print {
  public:
@@ -64,6 +96,7 @@ class Print {
 
 class Stream : public Print {
  public:
+  using Print::write;
   virtual int available() { return 0; }
   virtual int read() { return -1; }
   virtual int peek() { return -1; }
@@ -76,6 +109,7 @@ class SerialStub : public Print {
   operator bool() const { return true; }
   int available() const { return 0; }
   int read() { return -1; }
+  String readStringUntil(char);
   size_t write(uint8_t c) override {
     putchar(static_cast<char>(c));
     return 1;
@@ -84,7 +118,11 @@ class SerialStub : public Print {
     for (size_t i = 0; i < size; i++) putchar(static_cast<char>(buf[i]));
     return size;
   }
+#if defined(_MSC_VER)
+  size_t printf(const char* fmt, ...) {
+#else
   size_t printf(const char* fmt, ...) __attribute__((format(printf, 2, 3))) {
+#endif
     va_list args;
     va_start(args, fmt);
     char buf[512];

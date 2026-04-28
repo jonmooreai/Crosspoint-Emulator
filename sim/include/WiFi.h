@@ -45,8 +45,9 @@ enum { WIFI_AUTH_OPEN = 0 };
 class WiFiClass {
  public:
   void mode(int) {}
-  wl_status_t status() const { return WL_DISCONNECTED; }
-  void disconnect(bool = true) {}
+  void persistent(bool) {}
+  wl_status_t status() const { return WL_CONNECTED; }
+  void disconnect(bool = true, bool = false) {}
   void softAPdisconnect(bool = true) {}
   bool softAP(const char* ssid, const char* pass = nullptr, int = 1, bool = false, int = 4) {
     (void)ssid;
@@ -54,19 +55,21 @@ class WiFiClass {
     return false;  // no-op in sim
   }
   IPAddress softAPIP() const { return IPAddress(192, 168, 4, 1); }
-  IPAddress localIP() const { return IPAddress(0, 0, 0, 0); }
-  String SSID() const { return String(""); }
+  IPAddress localIP() const { return IPAddress(127, 0, 0, 1); }
+  String SSID() const { return String("Crosspoint-Emulator"); }
   String SSID(int i) const {
     (void)i;
     return String("");
   }
-  wifi_mode_t getMode() const { return WIFI_MODE_NULL; }
-  String getHostname() const { return String(""); }
+  wifi_mode_t getMode() const { return WIFI_MODE_STA; }
+  String getHostname() const { return String("crosspoint-emulator"); }
+  bool setHostname(const char*) { return true; }
   void setSleep(bool) {}
   int softAPgetStationNum() const { return 0; }
   void macAddress(uint8_t* mac) {
     for (int i = 0; i < 6; i++) mac[i] = 0;
   }
+  String macAddress() const { return String("00:00:00:00:00:00"); }
   void scanDelete() {}
   int16_t scanNetworks(bool = false) { return 0; }
   int16_t scanComplete() { return 0; }
@@ -82,7 +85,7 @@ class WiFiClass {
   bool begin(const char* ssid, const char* pass = nullptr) {
     (void)ssid;
     (void)pass;
-    return false;
+    return true;
   }
 };
 

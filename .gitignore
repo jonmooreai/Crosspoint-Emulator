@@ -1,5 +1,7 @@
 # Build artifacts
 build/
+build-codex/
+build-codex-*/
 *.o
 *.d
 *.a
@@ -36,3 +38,5 @@ crosspoint_emulator
 # Temporary files
 *.tmp
 *.log
+simctl-*.txt
+tools/tmp-*.txt
