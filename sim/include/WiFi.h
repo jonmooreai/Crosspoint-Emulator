@@ -41,12 +41,47 @@ enum { WIFI_OFF, WIFI_STA, WIFI_AP };
 enum wifi_mode_t { WIFI_MODE_NULL = 0, WIFI_MODE_STA = 1, WIFI_MODE_AP = 2, WIFI_MODE_APSTA = 3 };
 enum { WIFI_SCAN_RUNNING = -1, WIFI_SCAN_FAILED = -2 };
 enum { WIFI_AUTH_OPEN = 0 };
+typedef enum { WIFI_FAST_SCAN, WIFI_ALL_CHANNEL_SCAN } wifi_scan_method_t;
+typedef enum { WIFI_CONNECT_AP_BY_SIGNAL, WIFI_CONNECT_AP_BY_SECURITY } wifi_sort_method_t;
+
+typedef enum {
+  ARDUINO_EVENT_WIFI_STA_START,
+  ARDUINO_EVENT_WIFI_STA_CONNECTED,
+  ARDUINO_EVENT_WIFI_STA_DISCONNECTED,
+  ARDUINO_EVENT_WIFI_STA_GOT_IP,
+  ARDUINO_EVENT_WIFI_AP_START,
+} arduino_event_id_t;
+
+typedef union {
+  int unused;
+} arduino_event_info_t;
+
+using WiFiEventFuncCb = void (*)(arduino_event_id_t, arduino_event_info_t);
+using wifi_event_id_t = int;
 
 class WiFiClass {
  public:
+  // No radio, so no events ever fire.
+  template <typename Callback>
+  wifi_event_id_t onEvent(Callback, arduino_event_id_t = ARDUINO_EVENT_WIFI_STA_START) {
+    return 0;
+  }
+  void removeEvent(wifi_event_id_t) {}
+  void setScanMethod(wifi_scan_method_t) {}
+  void setSortMethod(wifi_sort_method_t) {}
+  uint8_t* BSSID(uint8_t* out = nullptr) {
+    static uint8_t none[6] = {};
+    if (out) {
+      for (int i = 0; i < 6; i++) out[i] = 0;
+      return out;
+    }
+    return none;
+  }
+  int32_t channel() const { return 0; }
   void mode(int) {}
   wl_status_t status() const { return WL_DISCONNECTED; }
   void disconnect(bool = true) {}
+  void disconnect(bool, bool) {}
   void softAPdisconnect(bool = true) {}
   bool softAP(const char* ssid, const char* pass = nullptr, int = 1, bool = false, int = 4) {
     (void)ssid;
@@ -62,11 +97,14 @@ class WiFiClass {
   }
   wifi_mode_t getMode() const { return WIFI_MODE_NULL; }
   String getHostname() const { return String(""); }
+  void persistent(bool) {}
+  void setHostname(const char*) {}
   void setSleep(bool) {}
   int softAPgetStationNum() const { return 0; }
   void macAddress(uint8_t* mac) {
     for (int i = 0; i < 6; i++) mac[i] = 0;
   }
+  String macAddress() const { return String("00:00:00:00:00:00"); }
   void scanDelete() {}
   int16_t scanNetworks(bool = false) { return 0; }
   int16_t scanComplete() { return 0; }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <GrayscaleCapabilities.h>
+
 #include <cstdint>
 
 class EInkDisplay {
@@ -33,8 +35,13 @@ class EInkDisplay {
   void displayBuffer(RefreshMode mode = FAST_REFRESH, bool fadingFix = false);
   void displayWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
   void displayGrayBuffer(bool fadingFix = false);
+  void displayGrayscaleBase(RefreshMode fallback = HALF_REFRESH, bool turnOffScreen = false);
   void refreshDisplay(RefreshMode mode = FAST_REFRESH, bool turnOffScreen = false);
   void grayscaleRevert();
+  // Real-hardware waveform preconditioning before a grayscale pass; the sim
+  // has no comparable panel timing concern, so these are no-ops.
+  void preconditionGrayscale();
+  void preconditionGrayscale(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
   void setCustomLUT(bool enabled, const unsigned char* lutData = nullptr);
   void deepSleep();
 

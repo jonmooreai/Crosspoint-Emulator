@@ -6,14 +6,7 @@
 #include <cstdio>
 #include <string>
 
-#ifndef O_RDONLY
-#define O_RDONLY  0x00
-#define O_WRONLY  0x01
-#define O_RDWR    0x02
-#define O_CREAT   0x04
-#define O_TRUNC   0x08
-#endif
-typedef int oflag_t;
+#include "common/FsApiConstants.h"
 
 class FsFile : public Stream {
  public:
@@ -23,13 +16,18 @@ class FsFile : public Stream {
   FsFile(FsFile&& other) noexcept;
   FsFile& operator=(FsFile&& other) noexcept;
 
-  void close();
+  bool close();
+  void flush() override;
+  bool truncate(uint64_t length);
+  bool getModifyDateTime(uint16_t* date, uint16_t* time) const;
+  bool isOpen() const { return fp_ != nullptr || dir_ != nullptr; }
   bool open(const char* path, oflag_t oflag = O_RDONLY);
   bool openFullPath(const char* fullPath, oflag_t oflag);
   int read() override;
   int read(uint8_t* buf, size_t size);
   int read(void* buf, size_t size) { return read(static_cast<uint8_t*>(buf), size); }
   int read(char* buf, size_t size) { return read(reinterpret_cast<uint8_t*>(buf), size); }
+  size_t write(const void* buf, size_t size) { return write(static_cast<const uint8_t*>(buf), size); }
   int peek() override;
   size_t write(uint8_t c) override;
   size_t write(const uint8_t* buf, size_t size) override;
@@ -73,4 +71,5 @@ class SdFat {
   bool exists(const char* path);
   bool remove(const char* path);
   bool rmdir(const char* path);
+  bool rename(const char* oldPath, const char* newPath);
 };

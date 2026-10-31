@@ -43,7 +43,17 @@ This allows rapid UI development, testing, and debugging without needing physica
 
 ## Download & Setup
 
-Follow the steps for your operating system below. You need: a **C++17 compiler**, **CMake 3.16+**, **SDL2** (2.x, not SDL3), **Python 3**, **Git**, and the **Crosspoint** repository next to the emulator.
+Follow the steps for your operating system below. You need: a **C++20 compiler** (GCC or Clang; on Windows, MinGW-w64 GCC), **CMake 3.21+**, **SDL2** (2.x, not SDL3), **Python 3**, **Git**, and the **Crosspoint** repository next to the emulator.
+
+> **Crosspoint version.** The emulator implements the firmware's HAL and FreeInk SDK interfaces, so it has to match the Crosspoint version it builds against. It was last updated for crosspoint-reader [`c9cb1f8d`](https://github.com/crosspoint-reader/crosspoint-reader/commit/c9cb1f8d) (FreeInk SDK `44427f8`). An older or much newer checkout can fail to compile with errors like *out-of-line definition ... does not match any declaration*. When updating Crosspoint, always update its SDK submodule too:
+>
+> ```sh
+> cd ../Crosspoint
+> git pull
+> git submodule update --init --recursive
+> ```
+>
+> To build exactly the tested version, use `git checkout c9cb1f8d` instead of `git pull`, then run the same submodule command.
 
 ### Setup on macOS
 
@@ -92,7 +102,7 @@ Follow the steps for your operating system below. You need: a **C++17 compiler**
      cd ~/Desktop
      git clone https://github.com/jonmooreai/Crosspoint-Emulator.git
      cd Crosspoint-Emulator
-     git clone https://github.com/crosspoint-reader/crosspoint-reader.git ../Crosspoint
+     git clone --recursive https://github.com/crosspoint-reader/crosspoint-reader.git ../Crosspoint
      ```
    - Replace with your fork URLs if different (Crosspoint firmware: `https://github.com/crosspoint-reader/crosspoint-reader`).
    - The **Crosspoint** repo must be a **sibling** of **Crosspoint-Emulator** (e.g. `Desktop/Crosspoint-Emulator` and `Desktop/Crosspoint`).
@@ -108,60 +118,56 @@ Follow the steps for your operating system below. You need: a **C++17 compiler**
 
 ### Setup on Windows
 
-1. **Install Visual Studio Build Tools** (C++ compiler)
-   - Go to: **https://visualstudio.microsoft.com/visual-cpp-build-tools/**  
-     (or search “Build Tools for Visual Studio”).
-   - Download **“Build Tools for Visual Studio 2022”** (or current year).
-   - Run the installer. In the workload list, select **“Desktop development with C++”**.
-   - Install. Restart if prompted.
-   - Open **Developer Command Prompt for VS** (or **x64 Native Tools Command Prompt**) from the Start menu to use the compiler later, or add it to your PATH.
+The firmware is written for GCC (it uses GCC extensions and POSIX headers), so on Windows the emulator builds with **MinGW-w64 GCC**, not MSVC.
 
-2. **Install CMake**
-   - Go to: **https://cmake.org/download/**  
-   - Under **“Latest Release”**, download **Windows x64 Installer** (e.g. `cmake-3.29.x-windows-x86_64.msi`).
-   - Run the installer. When asked, choose **“Add CMake to the system PATH for all users”** (or “current user”).
-   - Close and reopen any terminal. Verify: `cmake --version`.
+1. **Install MinGW-w64 GCC and Ninja**
+   - Easiest with winget, in **PowerShell**:
+     ```powershell
+     winget install -e --id BrechtSanders.WinLibs.POSIX.UCRT
+     ```
+     This WinLibs build includes `gcc`, `g++`, `ninja` and a recent `cmake`. Alternatively download it from **https://winlibs.com/** (UCRT, POSIX threads) and add its `mingw64\bin` folder to your PATH.
+   - Close and reopen the terminal. Verify: `g++ --version` and `ninja --version`.
+
+2. **Install CMake** (skip if `cmake --version` already works, e.g. from WinLibs)
+   - Go to: **https://cmake.org/download/**, download the **Windows x64 Installer** and choose **"Add CMake to the system PATH"**.
+   - Verify: `cmake --version` (3.21 or newer).
 
 3. **Install SDL2** (must be 2.x, not SDL3)
-   - Go to: **https://github.com/libsdl-org/SDL/releases**  
-   - In the latest **SDL2** release (e.g. 2.30.x), download **`SDL2-devel-2.30.x-mingw.zip`** (MinGW) **or** the **Visual C++** development package if you use MSVC (e.g. `SDL2-devel-2.30.x-VC.zip`).
-   - Extract the ZIP to a permanent folder, e.g. `C:\SDL2` — so you have `C:\SDL2\include`, `C:\SDL2\lib`, etc.
+   - Go to: **https://github.com/libsdl-org/SDL/releases**
+   - In the latest **SDL2** release (e.g. 2.32.x), download **`SDL2-devel-2.32.x-mingw.zip`** (the **MinGW** package, not the VC one).
+   - Extract it to a permanent folder, e.g. `C:\SDL2`, so you have `C:\SDL2\x86_64-w64-mingw32`, `C:\SDL2\cmake`, etc.
    - Remember this path; you will pass it to CMake as `-DSDL2_ROOT=C:\SDL2` (see step 7).
 
 4. **Install or verify Python 3**
-   - Download from: **https://www.python.org/downloads/**  
-   - Run the installer. **Check “Add Python to PATH”**.
-   - Restart the terminal. Verify: `py --version` or `python3 --version`.
+   - Download from: **https://www.python.org/downloads/** (or `winget install -e --id Python.Python.3.12`).
+   - Run the installer. **Check "Add Python to PATH"**.
+   - Restart the terminal. Verify: `python --version`. (The Microsoft Store `python` alias does not count; CMake must find a real interpreter.)
 
 5. **Install Git**
-   - Go to: **https://git-scm.com/download/win**  
+   - Go to: **https://git-scm.com/download/win**
    - Download and run the Windows installer. Use default options (Git in PATH).
    - Verify: `git --version`.
 
 6. **Clone the emulator and Crosspoint**
-   - Open **Command Prompt** or **PowerShell**. Go to a folder where you want the repos (e.g. Desktop):
-     ```cmd
-     cd %USERPROFILE%\Desktop
+   - Open **PowerShell**. Go to a folder where you want the repos (e.g. Desktop):
+     ```powershell
+     cd $env:USERPROFILE\Desktop
      git clone https://github.com/jonmooreai/Crosspoint-Emulator.git
      cd Crosspoint-Emulator
-     git clone https://github.com/crosspoint-reader/crosspoint-reader.git ..\Crosspoint
+     git clone --recursive https://github.com/crosspoint-reader/crosspoint-reader.git ..\Crosspoint
      ```
+   - `--recursive` matters: Crosspoint keeps the FreeInk SDK in a git submodule. If you already cloned without it, run `git submodule update --init --recursive` inside `..\Crosspoint`.
    - Replace the URLs with your fork if needed. **Crosspoint** must be a **sibling** of **Crosspoint-Emulator**.
-   - **Verify:** You should now be in the **Crosspoint-Emulator** directory (e.g. `%USERPROFILE%\Desktop\Crosspoint-Emulator`). You should see `CMakeLists.txt`, `README.md`, and a `sim` folder. The **Crosspoint** repo should exist as a sibling folder (e.g. `..\Crosspoint` with `src`, `lib` inside).
+   - **Verify:** You should now be in the **Crosspoint-Emulator** directory. You should see `CMakeLists.txt`, `README.md`, and a `sim` folder, and `..\Crosspoint\freeink-sdk\libs` should not be empty.
 
 7. **Build the emulator**
    - From the **Crosspoint-Emulator** directory (the directory from step 6):
-     ```cmd
-     mkdir build
-     cd build
-     cmake .. -DCROSSPOINT_ROOT=%USERPROFILE%\Desktop\Crosspoint -DSDL2_ROOT=C:\SDL2
+     ```powershell
+     cmake -S . -B build -G Ninja -DCROSSPOINT_ROOT="$env:USERPROFILE\Desktop\Crosspoint" -DSDL2_ROOT=C:\SDL2
+     cmake --build build
      ```
-   - Use the **actual** path to **Crosspoint** and the path where you extracted **SDL2** (e.g. `C:\SDL2`).
-   - Then:
-     ```cmd
-     cmake --build . --config Release
-     ```
-   - The executable will be in `build\Release\crosspoint_emulator.exe` (or `build\crosspoint_emulator.exe` depending on generator).
+   - Use the **actual** path to **Crosspoint** and the path where you extracted **SDL2**. The configure step also downloads ArduinoJson and the image decoders (PNGdec, JPEGDEC, AnimatedGIF) at the versions Crosspoint's `platformio.ini` pins, so it needs internet access the first time.
+   - The executable is `build\crosspoint_emulator.exe`, with `SDL2.dll` copied next to it. Create an `sdcard` folder in the emulator directory for your books, then run `.\build\crosspoint_emulator.exe` from there.
 
 ---
 
@@ -175,7 +181,7 @@ git clone https://github.com/jonmooreai/Crosspoint-Emulator.git
 cd Crosspoint-Emulator
 
 # Clone Crosspoint as a sibling directory (required)
-git clone https://github.com/crosspoint-reader/crosspoint-reader.git ../Crosspoint
+git clone --recursive https://github.com/crosspoint-reader/crosspoint-reader.git ../Crosspoint
 ```
 
 *(Use your fork URLs if different. Crosspoint firmware: `https://github.com/crosspoint-reader/crosspoint-reader`.)*
@@ -716,7 +722,7 @@ If you just cloned both repos and ran `cmake --build .` in `build/`, these fixes
   cd ~/Desktop   # or wherever you have Crosspoint-Emulator
   cd Crosspoint-Emulator
   # Clone Crosspoint firmware as a sibling named "Crosspoint" (so CMake finds it by default)
-  git clone https://github.com/crosspoint-reader/crosspoint-reader.git ../Crosspoint
+  git clone --recursive https://github.com/crosspoint-reader/crosspoint-reader.git ../Crosspoint
   ```
 - If Crosspoint is somewhere else, point CMake at it when configuring:
   ```bash
@@ -776,7 +782,7 @@ pkg-config --modversion sdl2
 **Crosspoint repo not found**:
 ```bash
 # Ensure Crosspoint is cloned
-git clone https://github.com/crosspoint-reader/crosspoint-reader.git ../Crosspoint
+git clone --recursive https://github.com/crosspoint-reader/crosspoint-reader.git ../Crosspoint
 
 # Or set CROSSPOINT_ROOT
 cmake .. -DCROSSPOINT_ROOT=/absolute/path/to/Crosspoint

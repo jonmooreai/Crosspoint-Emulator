@@ -11,6 +11,9 @@ class SDCardManager {
   SDCardManager();
   bool begin();
   bool ready() const;
+  void shutdown();
+  bool rename(const char* oldPath, const char* newPath);
+  bool replaceFile(const char* tmpPath, const char* path);
   std::vector<String> listFiles(const char* path = "/", int maxFiles = 200);
   String readFile(const char* path);
   bool readFileToStream(const char* path, Print& out, size_t chunkSize = 256);

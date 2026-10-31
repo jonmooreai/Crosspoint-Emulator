@@ -11,6 +11,7 @@
 
 #include <atomic>
 #include <cctype>
+#include <cstdlib>
 #include <cstdio>
 #include <string>
 #include <unistd.h>
@@ -30,6 +31,7 @@ bool endsWithEpub(const std::string& name) {
 }
 
 std::atomic<bool> g_prewarmDone{false};
+bool g_enablePrewarm = false;
 
 // Prewarm one EPUB per main-loop iteration so UI gets control between thumbnails
 // (matches device: single core, yields in image generation).
@@ -92,6 +94,12 @@ int main(int argc, char** argv) {
   (void)argc;
   (void)argv;
 
+  // Serial/log output goes through putchar() -> stdout, which defaults to
+  // fully-buffered when not attached to a TTY (e.g. piped to a file for
+  // debugging). Line-buffer it so log lines show up as they're printed
+  // instead of sitting in the buffer until it fills or the process exits.
+  setvbuf(stdout, nullptr, _IOLBF, 0);
+
   // Ensure ./sdcard is findable: if run from build/, chdir to project root
   if (access("./sdcard", F_OK) != 0 && access("../sdcard", F_OK) == 0) {
     if (chdir("..") != 0) {
@@ -104,12 +112,17 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  // Prewarming can block the UI for very large books; keep it opt-in for emulator usability.
+  g_enablePrewarm = (std::getenv("CROSSPOINT_EMU_PREWARM_THUMBS") != nullptr);
+
   printf("Crosspoint emulator: running setup() then loop(). Close window to exit.\n");
   setup();
 
   // Single main thread: one prewarm step per frame, then events and loop (matches device).
   while (true) {
-    prewarmStep();
+    if (g_enablePrewarm) {
+      prewarmStep();
+    }
     if (!sim_display_pump_events()) {
       break;
     }
@@ -117,5 +130,7 @@ int main(int argc, char** argv) {
   }
 
   sim_display_shutdown();
-  return 0;
+  // CrossPoint has a deliberate assert(false) in ActivityManager destructor.
+  // Exit without static/global teardown to avoid false-positive crash reports on window close.
+  std::_Exit(0);
 }

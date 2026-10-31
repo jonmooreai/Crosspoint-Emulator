@@ -1,0 +1,15 @@
+# Usage: cmake -DPATCH_DIR=<dir with *.patch> -P apply_patches.cmake   (run in the source tree)
+# Applies each patch with git apply, skipping those already applied, so FetchContent
+# can rerun its patch step on every reconfigure.
+file(GLOB patches "${PATCH_DIR}/*.patch")
+list(SORT patches)
+foreach(patch IN LISTS patches)
+  execute_process(COMMAND git apply --check --reverse "${patch}" RESULT_VARIABLE already OUTPUT_QUIET ERROR_QUIET)
+  if(already EQUAL 0)
+    continue()
+  endif()
+  execute_process(COMMAND git apply --whitespace=nowarn "${patch}" RESULT_VARIABLE failed)
+  if(NOT failed EQUAL 0)
+    message(FATAL_ERROR "Failed to apply ${patch}")
+  endif()
+endforeach()

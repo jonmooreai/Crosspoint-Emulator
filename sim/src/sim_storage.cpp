@@ -10,8 +10,49 @@
 #include <cstring>
 #include <dirent.h>
 #include <stdlib.h>
+#include <ctime>
 #include <sys/stat.h>
 #include <unistd.h>
+
+#ifdef _WIN32
+#include <direct.h>
+#include <io.h>
+#endif
+
+namespace {
+
+int makeDir(const char* path) {
+#ifdef _WIN32
+  return ::_mkdir(path);
+#else
+  return ::mkdir(path, 0755);
+#endif
+}
+
+// Like rename(2): replaces an existing destination. Windows' rename() refuses to.
+bool replacePath(const char* from, const char* to) {
+#ifdef _WIN32
+  struct stat st;
+  if (stat(to, &st) == 0 && !S_ISDIR(st.st_mode)) ::remove(to);
+#endif
+  return ::rename(from, to) == 0;
+}
+
+// Absolute path of an existing directory, or false if there is none.
+bool absoluteDir(const char* path, std::string& out) {
+  struct stat st;
+  if (stat(path, &st) != 0 || !S_ISDIR(st.st_mode)) return false;
+  char resolved[PATH_MAX];
+#ifdef _WIN32
+  if (_fullpath(resolved, path, sizeof(resolved)) == nullptr) return false;
+#else
+  if (realpath(path, resolved) == nullptr) return false;
+#endif
+  out = resolved;
+  return true;
+}
+
+}  // namespace
 
 std::string FsFile::s_rootPath = "./sdcard";
 
@@ -46,8 +87,9 @@ FsFile& FsFile::operator=(FsFile&& other) noexcept {
   return *this;
 }
 
-void FsFile::close() {
+bool FsFile::close() {
   SpiBusGuard guard;
+  const bool wasOpen = fp_ || dir_;
   if (fp_) {
     fclose(fp_);
     fp_ = nullptr;
@@ -60,6 +102,7 @@ void FsFile::close() {
   dirPath_.clear();
   currentName_.clear();
   filePath_.clear();
+  return wasOpen;
 }
 
 bool FsFile::openFullPath(const char* fullPath, oflag_t oflag) {
@@ -68,13 +111,19 @@ bool FsFile::openFullPath(const char* fullPath, oflag_t oflag) {
   if (!fullPath) return false;
   struct stat st;
   if (stat(fullPath, &st) != 0) {
-    if ((oflag & O_CREAT) && (oflag & (O_WRONLY | O_RDWR))) {
-      std::string p(fullPath);
-      for (size_t i = 1; i < p.size(); i++) {
-        if (p[i] == '/') {
-          std::string part = p.substr(0, i);
-          if (mkdir(part.c_str(), 0755) != 0 && errno != EEXIST) return false;
-        }
+    // File doesn't exist. A read-only open must FAIL — never create the file.
+    // (fopen "wb" would create a 0-byte file, which on device a read-open never
+    // does; that spurious empty file then poisons existence checks downstream.)
+    if (!(oflag & O_CREAT) || !(oflag & (O_WRONLY | O_RDWR))) {
+      return false;
+    }
+    std::string p(fullPath);
+    for (size_t i = 1; i < p.size(); i++) {
+      if (p[i] == '/') {
+        std::string part = p.substr(0, i);
+        // Skip a bare drive ("C:") on Windows; it is not a directory to create.
+        if (part.size() == 2 && part[1] == ':') continue;
+        if (makeDir(part.c_str()) != 0 && errno != EEXIST) return false;
       }
     }
     fp_ = fopen(fullPath, (oflag & O_RDWR) ? "wb+" : "wb");
@@ -89,12 +138,21 @@ bool FsFile::openFullPath(const char* fullPath, oflag_t oflag) {
     dirPath_ = fullPath;
     return true;
   }
-  const char* mode = (oflag & O_RDWR) ? "wb+" : ((oflag & O_WRONLY) ? "wb" : "rb");
-  if ((oflag & O_CREAT) && (oflag & O_TRUNC)) mode = "wb";
-  if ((oflag & O_RDWR) && (oflag & O_CREAT)) mode = "wb+";
+  // Existing file: only O_TRUNC discards its contents, as on SdFat.
+  const bool writable = oflag & (O_WRONLY | O_RDWR);
+  const char* mode = "rb";
+  if (writable && (oflag & O_TRUNC)) {
+    mode = (oflag & O_RDWR) ? "wb+" : "wb";
+  } else if (writable && (oflag & O_APPEND)) {
+    mode = "ab+";
+  } else if (writable) {
+    mode = "rb+";
+  }
   fp_ = fopen(fullPath, mode);
-  if (fp_) filePath_ = fullPath;
-  return fp_ != nullptr;
+  if (!fp_) return false;
+  if (oflag & O_AT_END) fseek(fp_, 0, SEEK_END);
+  filePath_ = fullPath;
+  return true;
 }
 
 bool FsFile::open(const char* path, oflag_t oflag) {
@@ -208,8 +266,49 @@ FsFile FsFile::openNextFile() {
 bool FsFile::rename(const char* newPath) {
   if (filePath_.empty() || !newPath) return false;
   const std::string dest = resolvePath(newPath);
-  if (::rename(filePath_.c_str(), dest.c_str()) != 0) return false;
+#ifdef _WIN32
+  // Windows cannot rename a file that is open; reopen it at the new path.
+  const long pos = fp_ ? ftell(fp_) : 0;
+  if (fp_) {
+    fclose(fp_);
+    fp_ = nullptr;
+  }
+  const bool ok = replacePath(filePath_.c_str(), dest.c_str());
+  if (ok) filePath_ = dest;
+  fp_ = fopen(filePath_.c_str(), "rb+");
+  if (fp_) fseek(fp_, pos, SEEK_SET);
+  return ok;
+#else
+  if (!replacePath(filePath_.c_str(), dest.c_str())) return false;
   filePath_ = dest;
+  return true;
+#endif
+}
+
+void FsFile::flush() {
+  if (fp_) fflush(fp_);
+}
+
+bool FsFile::truncate(uint64_t length) {
+  if (!fp_) return false;
+  fflush(fp_);
+#ifdef _WIN32
+  return _chsize_s(_fileno(fp_), static_cast<long long>(length)) == 0;
+#else
+  return ftruncate(fileno(fp_), static_cast<off_t>(length)) == 0;
+#endif
+}
+
+// FAT-encoded modification date/time, as SdFat reports it.
+bool FsFile::getModifyDateTime(uint16_t* date, uint16_t* time) const {
+  if (filePath_.empty() && dirPath_.empty()) return false;
+  struct stat st;
+  if (stat(filePath_.empty() ? dirPath_.c_str() : filePath_.c_str(), &st) != 0) return false;
+  const time_t mtime = st.st_mtime;
+  const struct tm* t = localtime(&mtime);
+  if (!t || t->tm_year < 80) return false;
+  *date = static_cast<uint16_t>(((t->tm_year - 80) << 9) | ((t->tm_mon + 1) << 5) | t->tm_mday);
+  *time = static_cast<uint16_t>((t->tm_hour << 11) | (t->tm_min << 5) | (t->tm_sec / 2));
   return true;
 }
 
@@ -235,12 +334,14 @@ bool SdFat::mkdir(const char* path, bool pFlag) {
         if (i == 0) continue;
         const std::string part = full.substr(0, i);
         if (part.empty()) continue;
-        if (::mkdir(part.c_str(), 0755) != 0 && errno != EEXIST) return false;
+        // Skip a bare drive ("C:") on Windows; it is not a directory to create.
+        if (part.size() == 2 && part[1] == ':') continue;
+        if (makeDir(part.c_str()) != 0 && errno != EEXIST) return false;
       }
     }
     return true;
   }
-  return ::mkdir(full.c_str(), 0755) == 0 || errno == EEXIST;
+  return makeDir(full.c_str()) == 0 || errno == EEXIST;
 }
 
 bool SdFat::exists(const char* path) {
@@ -257,22 +358,26 @@ bool SdFat::rmdir(const char* path) {
   return ::rmdir(FsFile::resolvePath(path).c_str()) == 0;
 }
 
+bool SdFat::rename(const char* oldPath, const char* newPath) {
+  return replacePath(FsFile::resolvePath(oldPath).c_str(), FsFile::resolvePath(newPath).c_str());
+}
+
 SDCardManager SDCardManager::instance;
 
 SDCardManager::SDCardManager() = default;
 
 bool SDCardManager::begin() {
   // Use absolute path so directory listing works regardless of process cwd (e.g. when run from build/)
-  char resolved[PATH_MAX];
-  if (realpath("./sdcard", resolved) != nullptr) {
+  std::string resolved;
+  if (absoluteDir("./sdcard", resolved)) {
     FsFile::setRootPath(resolved);
-    Serial.printf("[%lu] [SD] Sim SD card %s\n", millis(), resolved);
-  } else if (realpath("../sdcard", resolved) != nullptr) {
+    Serial.printf("[%lu] [SD] Sim SD card %s\n", millis(), resolved.c_str());
+  } else if (absoluteDir("../sdcard", resolved)) {
     FsFile::setRootPath(resolved);
-    Serial.printf("[%lu] [SD] Sim SD card %s (from ../sdcard)\n", millis(), resolved);
+    Serial.printf("[%lu] [SD] Sim SD card %s (from ../sdcard)\n", millis(), resolved.c_str());
   } else {
     FsFile::setRootPath("./sdcard");
-    Serial.printf("[%lu] [SD] Sim SD card (./sdcard, realpath failed)\n", millis());
+    Serial.printf("[%lu] [SD] Sim SD card (./sdcard, not found)\n", millis());
   }
   initialized = true;
   return initialized;
@@ -281,6 +386,12 @@ bool SDCardManager::begin() {
 bool SDCardManager::ready() const {
   return initialized;
 }
+
+void SDCardManager::shutdown() {}
+
+bool SDCardManager::rename(const char* oldPath, const char* newPath) { return sd.rename(oldPath, newPath); }
+
+bool SDCardManager::replaceFile(const char* tmpPath, const char* path) { return sd.rename(tmpPath, path); }
 
 std::vector<String> SDCardManager::listFiles(const char* path, int maxFiles) {
   std::vector<String> ret;

@@ -4,4 +4,6 @@
 bool OtaUpdater::isUpdateNewer() const { return false; }
 const std::string& OtaUpdater::getLatestVersion() const { return latestVersion; }
 OtaUpdater::OtaUpdaterError OtaUpdater::checkForUpdate() { return OtaUpdater::NO_UPDATE; }
-OtaUpdater::OtaUpdaterError OtaUpdater::installUpdate() { return OtaUpdater::NO_UPDATE; }
+OtaUpdater::OtaUpdaterError OtaUpdater::installUpdate(ProgressCallback onProgress, void* ctx) { 
+  return OtaUpdater::NO_UPDATE; 
+}
